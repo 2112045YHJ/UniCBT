@@ -14,7 +14,7 @@ public class DBConnection {
     private DBConnection() {
         // private 생성자 (싱글톤)
     }
-//test중
+
     public static Connection getConnection() {
         try {
             return DriverManager.getConnection(URL, USER, PASS);

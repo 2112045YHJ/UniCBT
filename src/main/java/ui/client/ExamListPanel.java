@@ -44,7 +44,7 @@ public class ExamListPanel extends JPanel {
 
         // 데이터 로드
         try {
-            examList = examService.getOpenExams(user.getDpmtId(), user.getGrade());
+            examList = examService.getAssignedOpenExams(user.getUserId());
         } catch (ServiceException e) {
             throw new RuntimeException(e);
         }

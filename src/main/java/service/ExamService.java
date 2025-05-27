@@ -38,4 +38,12 @@ public interface ExamService {
     Map<Integer, ExamResult> getExamResultsByUser(int userId) throws ServiceException, DaoException;
     List<Exam> getAllExams(int dpmtId, int grade) throws ServiceException;
     public List<Exam> getAllExamsForUser(User user) throws ServiceException;
+
+    // === 새 메서드 추가 ===
+    /** 할당된(open) 시험 목록 (기간 내) **/
+    List<Exam> getAssignedOpenExams(int userId) throws ServiceException;
+    /** 학생에게 할당된 모든 시험 목록 **/
+    List<Exam> getAssignedExams(int userId) throws ServiceException;
+    /** 시험에 학생 배정 **/
+    void assignExamToUsers(int examId, List<Integer> userIds) throws ServiceException;
 }

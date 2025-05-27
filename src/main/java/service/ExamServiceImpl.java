@@ -22,6 +22,7 @@ public class ExamServiceImpl implements ExamService {
     private final AnswerKeyDao         answerKeyDao         = new AnswerKeyDaoImpl();
     private final AnswerSheetDao       answerSheetDao       = new AnswerSheetDaoImpl();
     private final ExamResultDao        examResultDao        = new ExamResultDaoImpl();
+    private final ExamAssignmentDao    examAssignmentDao    = new ExamAssignmentDaoImpl();
     @Override
     public List<Exam> getOpenExams() throws ServiceException {
         try {
@@ -191,6 +192,50 @@ public class ExamServiceImpl implements ExamService {
             return examList;
         } catch (DaoException e) {
             throw new ServiceException("전체 시험 조회 실패", e);
+        }
+    }
+    @Override
+    public List<Exam> getAssignedOpenExams(int userId) throws ServiceException {
+        try {
+            List<Integer> assignedIds = examAssignmentDao.findExamIdsByUser(userId);
+            List<Exam> exams = new ArrayList<>();
+            LocalDateTime now = LocalDateTime.now();
+            for (Integer id : assignedIds) {
+                Exam exam = examDao.findById(id);
+                if (exam != null && !exam.getStartDate().isAfter(now) && !exam.getEndDate().isBefore(now)) {
+                    exams.add(exam);
+                }
+            }
+            return exams;
+        } catch (DaoException e) {
+            throw new ServiceException("할당된 오픈 시험 조회 실패", e);
+        }
+    }
+
+    @Override
+    public List<Exam> getAssignedExams(int userId) throws ServiceException {
+        try {
+            List<Integer> assignedIds = examAssignmentDao.findExamIdsByUser(userId);
+            List<Exam> exams = new ArrayList<>();
+            for (Integer id : assignedIds) {
+                Exam exam = examDao.findById(id);
+                if (exam != null) {
+                    exams.add(exam);
+                }
+            }
+            exams.sort(Comparator.comparing(Exam::getStartDate).reversed());
+            return exams;
+        } catch (DaoException e) {
+            throw new ServiceException("할당된 시험 전체 조회 실패", e);
+        }
+    }
+
+    @Override
+    public void assignExamToUsers(int examId, List<Integer> userIds) throws ServiceException {
+        try {
+            examAssignmentDao.assignStudents(examId, userIds);
+        } catch (DaoException e) {
+            throw new ServiceException("시험 학생 배정 실패", e);
         }
     }
 
