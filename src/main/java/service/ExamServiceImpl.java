@@ -1,5 +1,6 @@
 package main.java.service;
 
+import main.java.context.ExamCreationContext;
 import main.java.dao.*;
 import main.java.model.*;
 import main.java.util.DBConnection;
@@ -18,11 +19,13 @@ public class ExamServiceImpl implements ExamService {
     private final ExamsDepartmentDao   examsDeptDao   = new ExamsDepartmentDaoImpl(); // 이름 맞춤
 
     private final QuestionBankDao      questionBankDao      = new QuestionBankDaoImpl();
+    private final QuestionDao          questionDao          = new QuestionDaoImpl();
     private final QuestionOptionDao    questionOptionDao    = new QuestionOptionDaoImpl();
     private final AnswerKeyDao         answerKeyDao         = new AnswerKeyDaoImpl();
     private final AnswerSheetDao       answerSheetDao       = new AnswerSheetDaoImpl();
     private final ExamResultDao        examResultDao        = new ExamResultDaoImpl();
     private final ExamAssignmentDao    examAssignmentDao    = new ExamAssignmentDaoImpl();
+    private final ExamsDepartmentDao   examsDepartmentDao   = new ExamsDepartmentDaoImpl();
     @Override
     public List<Exam> getOpenExams() throws ServiceException {
         try {
@@ -261,6 +264,52 @@ public class ExamServiceImpl implements ExamService {
             return examDao.findAssignedDepartmentsAndGrades(examId);
         } catch (DaoException e) {
             throw new ServiceException("응시 대상 조회 실패", e);
+        }
+    }
+    @Override
+    public void saveExamWithDetails(ExamCreationContext context) throws ServiceException {
+        try {
+            // 1. 시험 저장
+            Exam exam = context.getExam();
+            exam.setQuestionCnt(context.getQuestions().size());
+            examDao.insert(exam);  // ID 자동 세팅
+            int examId = exam.getExamId();
+
+            // 2. 문제, 보기, 정답 저장
+            for (QuestionFull q : context.getQuestions()) {
+                q.getQuestionBank().setExamId(examId);
+                questionBankDao.insert(q.getQuestionBank());
+                int questionId = q.getQuestionBank().getQuestionId();
+
+                if (q.getType() == QuestionType.MCQ) {
+                    for (QuestionOption opt : q.getOptions()) {
+                        opt.setQuestionId(questionId);
+                        questionOptionDao.insert(opt);
+                    }
+                    AnswerKey key = new AnswerKey();
+                    key.setQuestionId(questionId);
+                    key.setCorrectLabel(q.getCorrectLabel());
+                    answerKeyDao.insert(key);
+                } else if (q.getType() == QuestionType.OX) {
+                    AnswerKey key = new AnswerKey();
+                    key.setQuestionId(questionId);
+                    key.setCorrectText(q.getCorrectText());
+                    answerKeyDao.insert(key);
+                }
+            }
+
+            // 3. 응시 대상 저장
+            for (int grade : context.getTargetGrades()) {
+                for (int dpmtId : context.getTargetDepartments()) {
+                    ExamsDepartment ed = new ExamsDepartment();
+                    ed.setExamId(examId);
+                    ed.setDpmtId(dpmtId);
+                    ed.setGrade(grade);
+                    examsDepartmentDao.save(ed);
+                }
+            }
+        } catch (Exception e) {
+            throw new ServiceException("시험 저장 중 오류 발생", e);
         }
     }
 

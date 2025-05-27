@@ -6,8 +6,13 @@ import main.java.model.QuestionFull;
 import java.util.List;
 
 public class ExamCreationContext {
+
     private Exam exam;
     private List<QuestionFull> questions;
+
+    // ✅ 추가: 응시 대상 학년 및 학과 ID 목록
+    private List<Integer> targetGrades;
+    private List<Integer> targetDepartments;
 
     public Exam getExam() {
         return exam;
@@ -25,8 +30,20 @@ public class ExamCreationContext {
         this.questions = questions;
     }
 
-    public void clear() {
-        this.exam = null;
-        this.questions = null;
+    // ✅ 추가 Getter/Setter
+    public List<Integer> getTargetGrades() {
+        return targetGrades;
+    }
+
+    public void setTargetGrades(List<Integer> targetGrades) {
+        this.targetGrades = targetGrades;
+    }
+
+    public List<Integer> getTargetDepartments() {
+        return targetDepartments;
+    }
+
+    public void setTargetDepartments(List<Integer> targetDepartments) {
+        this.targetDepartments = targetDepartments;
     }
 }

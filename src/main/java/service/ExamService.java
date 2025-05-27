@@ -1,5 +1,6 @@
 package main.java.service;
 
+import main.java.context.ExamCreationContext;
 import main.java.dao.DaoException;
 import main.java.model.*;
 
@@ -50,4 +51,6 @@ public interface ExamService {
 
     void disableExam(int examId) throws ServiceException;
     List<String> getAssignedDepartmentsAndGrades(int examId) throws ServiceException;
+
+    void saveExamWithDetails(ExamCreationContext context) throws ServiceException;
 }

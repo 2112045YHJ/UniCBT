@@ -58,7 +58,25 @@ public class QuestionEditorPanel extends JPanel {
                 return;
             }
             context.setQuestions(questionList);
-            onNext.run();
+
+            // ✅ TargetSelectionDialog 호출
+            TargetSelectionDialog dialog = new TargetSelectionDialog(
+                    (JFrame) SwingUtilities.getWindowAncestor(this),
+                    context,
+                    () -> {
+                        JFrame frame = (JFrame) SwingUtilities.getWindowAncestor(this);
+                        frame.setContentPane(new ExamMgmtPanel());
+                        frame.revalidate();
+                        frame.repaint();
+                    }
+            );
+            dialog.setVisible(true);
+
+            // 응시 대상이 정상적으로 설정된 경우에만 다음 단계로
+            if (context.getTargetGrades() != null && !context.getTargetGrades().isEmpty()
+                    && context.getTargetDepartments() != null && !context.getTargetDepartments().isEmpty()) {
+                onNext.run();
+            }
         });
 
         panel.add(prevBtn);
