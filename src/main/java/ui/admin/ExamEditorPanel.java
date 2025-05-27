@@ -8,7 +8,6 @@ import java.awt.*;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.Date;
-import java.util.function.Consumer;
 
 public class ExamEditorPanel extends JPanel {
     private final JTextField subjectField = new JTextField();
@@ -21,12 +20,12 @@ public class ExamEditorPanel extends JPanel {
 
     private final ExamCreationContext context;
     private final Runnable onBack;
-    private final Consumer<Exam> onSubmit;
+    private final JFrame parentFrame;
 
-    public ExamEditorPanel(ExamCreationContext context, Runnable onBack, Consumer<Exam> onSubmit) {
+    public ExamEditorPanel(ExamCreationContext context, Runnable onBack, JFrame parentFrame) {
         this.context = context;
         this.onBack = onBack;
-        this.onSubmit = onSubmit;
+        this.parentFrame = parentFrame;
 
         setLayout(new BorderLayout());
         add(createHeader(), BorderLayout.NORTH);
@@ -80,7 +79,18 @@ public class ExamEditorPanel extends JPanel {
                 exam.setEndDate(convert((Date) endDateSpinner.getValue()));
 
                 context.setExam(exam);
-                onSubmit.accept(exam); // 호출자에게 시험 결과 전달
+
+                // 👉 다음 단계로 실제 이동: QuestionEditorPanel로 전환
+                parentFrame.setContentPane(new QuestionEditorPanel(
+                        context,
+                        () -> parentFrame.setContentPane(new ExamEditorPanel(context, onBack, parentFrame)),
+                        () -> {
+                            // 다음 단계 예비 작업
+                            System.out.println("응시 대상 선택 화면으로 이동 예정");
+                        }
+                ));
+                parentFrame.revalidate();
+                parentFrame.repaint();
             }
         });
 
@@ -105,16 +115,17 @@ public class ExamEditorPanel extends JPanel {
             showError("과목명을 입력해주세요.");
             return false;
         }
+
         Date start = (Date) startDateSpinner.getValue();
         Date end = (Date) endDateSpinner.getValue();
         Date now = new Date();
 
         if (!end.after(now)) {
-            showError("마감일은 현재 시간보다 이후로 설정해야 합니다.");
+            showError("마감일은 현재 시간보다 이후여야 합니다.");
             return false;
         }
         if (!end.after(start)) {
-            showError("마감일은 시작일보다 시작일보다 늦어야 합니다.");
+            showError("마감일은 시작일보다 늦어야 합니다.");
             return false;
         }
 

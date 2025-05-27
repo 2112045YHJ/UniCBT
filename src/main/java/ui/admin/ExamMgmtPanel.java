@@ -35,12 +35,8 @@ public class ExamMgmtPanel extends JPanel {
 
             ExamEditorPanel editorPanel = new ExamEditorPanel(
                     context,
-                    frame::dispose,
-                    exam -> {
-                        context.setExam(exam);
-                        JOptionPane.showMessageDialog(frame, "시험 정보 입력 완료: " + exam.getSubject());
-                        frame.dispose();
-                    }
+                    () -> frame.dispose(),  // onBack: 닫기
+                    frame                   // parentFrame 전달
             );
 
             frame.setContentPane(editorPanel);
@@ -169,12 +165,8 @@ public class ExamMgmtPanel extends JPanel {
 
                         ExamEditorPanel editorPanel = new ExamEditorPanel(
                                 context,
-                                frame::dispose,
-                                updatedExam -> {
-                                    context.setExam(updatedExam);
-                                    JOptionPane.showMessageDialog(frame, "시험 수정 완료: " + updatedExam.getSubject());
-                                    frame.dispose();
-                                }
+                                () -> frame.dispose(),  // onBack: 닫기
+                                frame                   // parentFrame 전달
                         );
 
                         frame.setContentPane(editorPanel);
