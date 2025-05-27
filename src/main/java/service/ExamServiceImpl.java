@@ -239,4 +239,13 @@ public class ExamServiceImpl implements ExamService {
         }
     }
 
+    @Override
+    public List<Exam> getAllExams() throws ServiceException {
+        try {
+            return examDao.findAll();
+        } catch (DaoException e) {
+            throw new ServiceException("전체 시험 조회 실패", e);
+        }
+    }
+
 }

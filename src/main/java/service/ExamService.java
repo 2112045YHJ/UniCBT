@@ -46,4 +46,6 @@ public interface ExamService {
     List<Exam> getAssignedExams(int userId) throws ServiceException;
     /** 시험에 학생 배정 **/
     void assignExamToUsers(int examId, List<Integer> userIds) throws ServiceException;
+    List<Exam> getAllExams() throws ServiceException;
+
 }

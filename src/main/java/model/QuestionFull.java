@@ -10,7 +10,10 @@ public class QuestionFull {
     private QuestionBank questionBank;
     private List<QuestionOption> options;
     private AnswerKey answerKey;
-
+    private String questionText;
+    private QuestionType type;
+    private String correctLabel; // 객관식 정답
+    private String correctText;  // OX 정답
     /** 기본 생성자 */
     public QuestionFull() { }
 
@@ -90,4 +93,12 @@ public class QuestionFull {
                 ", answerKey=" + answerKey +
                 '}';
     }
+
+    public void setQuestionText(String trim) {this.questionText = trim;}
+
+    public void setType(QuestionType type) {this.type = type;}
+
+    public void setCorrectLabel(String selectedItem) {this.correctLabel=selectedItem;}
+
+    public void setCorrectText(String selectedItem) { this.correctText=selectedItem;}
 }
