@@ -1,5 +1,6 @@
 package main.java.ui.client;
 
+import main.java.dao.DaoException;
 import main.java.model.QuestionFull;
 import main.java.model.QuestionOption;
 import main.java.model.User;
@@ -233,6 +234,8 @@ public class ExamTakingPanel extends JPanel {
             JOptionPane.showMessageDialog(this,
                     "제출 중 오류가 발생했습니다:\n" + ex.getMessage(),
                     "오류", JOptionPane.ERROR_MESSAGE);
+        } catch (DaoException e) {
+            throw new RuntimeException(e);
         }
     }
 

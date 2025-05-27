@@ -32,4 +32,15 @@ public class AnswerSheetDaoImpl implements AnswerSheetDao {
             pstmt.setInt(1, userId); pstmt.setInt(2, examId); pstmt.executeUpdate();
         } catch (SQLException e) { throw new DaoException("Error deleting AnswerSheets by user and exam", e); }
     }
+
+    @Override
+    public void insert(int userId, int examId, int questionId, String answer) throws DaoException {
+        // primitive 파라미터 버전은 객체 생성 후 기존 메서드 재사용
+        AnswerSheet sheet = new AnswerSheet();
+        sheet.setUserId(userId);
+        sheet.setExamId(examId);
+        sheet.setQuestionId(questionId);
+        sheet.setSelectedAnswer(answer);
+        insert(sheet);
+    }
 }

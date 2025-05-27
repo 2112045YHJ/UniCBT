@@ -15,12 +15,12 @@ public class SubmissionServiceImpl implements SubmissionService {
     private final AnswerSheetDao answerSheetDao = new AnswerSheetDaoImpl();
 
     @Override
-    public void submitAnswer(int userId, int examId, int questionId, String answer) throws ServiceException {
+    public void submitAnswer(int userId, int examId, int questionId, String answer) throws ServiceException, DaoException {
         answerSheetDao.insert(userId, examId, questionId, answer);
     }
 
     @Override
-    public void submitAnswerBatch(int userId, int examId, Map<Integer, String> answers) throws ServiceException {
+    public void submitAnswerBatch(int userId, int examId, Map<Integer, String> answers) throws ServiceException, DaoException {
         for (Map.Entry<Integer, String> entry : answers.entrySet()) {
             int qId = entry.getKey();
             String ans = entry.getValue();

@@ -8,5 +8,5 @@ public interface AnswerSheetDao {
     List<AnswerSheet> findByUserAndExam(int userId, int examId) throws DaoException;
     void deleteByUserAndExam(int userId, int examId) throws DaoException;
 
-    void insert(int userId, int examId, int questionId, String answer);
+    void insert(int userId, int examId, int questionId, String answer) throws DaoException;
 }
