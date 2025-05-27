@@ -33,12 +33,11 @@ public class ExamMgmtPanel extends JPanel {
             ExamCreationContext context = new ExamCreationContext();
 
             JFrame frame = new JFrame("시험 등록");
-            frame.setContentPane(new ExamEditorPanel(null, exam -> {
-                context.setExam(exam);
-                JOptionPane.showMessageDialog(frame, "시험 정보 입력 완료: " + exam.getSubject());
-                frame.dispose();
-                // TODO: 이후 문제 입력 화면 등으로 연결 가능
-            }, frame::dispose));
+            ExamEditorPanel editorPanel = new ExamEditorPanel(
+                    context,
+                    () -> frame.dispose(),  // onBack: 창 닫기
+                    frame                   // parentFrame 전달
+            );
             frame.setSize(600, 400);
             frame.setLocationRelativeTo(null);
             frame.setVisible(true);
@@ -160,12 +159,14 @@ public class ExamMgmtPanel extends JPanel {
                     case "수정" -> {
                         ExamCreationContext context = new ExamCreationContext();
                         context.setExam(exam);
+
                         JFrame frame = new JFrame("시험 수정");
-                        frame.setContentPane(new ExamEditorPanel(exam, updatedExam -> {
-                            context.setExam(updatedExam);
-                            JOptionPane.showMessageDialog(frame, "수정 완료: " + updatedExam.getSubject());
-                            frame.dispose();
-                        }, frame::dispose));
+                        ExamEditorPanel editorPanel = new ExamEditorPanel(
+                                context,
+                                () -> frame.dispose(),  // onBack
+                                frame
+                        );
+                        frame.setContentPane(editorPanel);
                         frame.setSize(600, 400);
                         frame.setLocationRelativeTo(button);
                         frame.setVisible(true);

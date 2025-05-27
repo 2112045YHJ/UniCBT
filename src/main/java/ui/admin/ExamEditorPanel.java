@@ -1,5 +1,6 @@
 package main.java.ui.admin;
 
+import main.java.context.ExamCreationContext;
 import main.java.model.Exam;
 
 import javax.swing.*;
@@ -9,12 +10,6 @@ import java.time.ZoneId;
 import java.util.Date;
 import java.util.function.Consumer;
 
-/**
- * 시험 등록/수정 화면 (슬라이드 23번 기반)
- * - 과목명, 제한 시간, 시작일, 마감일 입력
- * - 기존 Exam 객체가 주어지면 수정 모드로 동작
- * - 콜백으로 다음/이전 화면 이동 처리
- */
 public class ExamEditorPanel extends JPanel {
 
     private final JTextField subjectField = new JTextField();
@@ -25,15 +20,14 @@ public class ExamEditorPanel extends JPanel {
     private final JButton backButton = new JButton("이전");
     private final JButton nextButton = new JButton("다음");
 
-    private final Consumer<Exam> onNext;
+    private final ExamCreationContext context;
     private final Runnable onBack;
+    private final JFrame parentFrame;
 
-    private Exam editingExam;
-
-    public ExamEditorPanel(Exam exam, Consumer<Exam> onNext, Runnable onBack) {
-        this.editingExam = exam;
-        this.onNext = onNext;
+    public ExamEditorPanel(ExamCreationContext context, Runnable onBack, JFrame parentFrame) {
+        this.context = context;
         this.onBack = onBack;
+        this.parentFrame = parentFrame;
 
         setLayout(new BorderLayout());
         add(createHeader(), BorderLayout.NORTH);
@@ -73,30 +67,41 @@ public class ExamEditorPanel extends JPanel {
 
     private JPanel createButtons() {
         JPanel panel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-        panel.add(backButton);
-        panel.add(nextButton);
 
         backButton.addActionListener(e -> onBack.run());
+
         nextButton.addActionListener(e -> {
             if (validateInput()) {
-                if (editingExam == null) editingExam = new Exam();
-                editingExam.setSubject(subjectField.getText().trim());
-                editingExam.setDurationMinutes((int) durationSpinner.getValue());
-                editingExam.setStartDate(convert((Date) startDateSpinner.getValue()));
-                editingExam.setEndDate(convert((Date) endDateSpinner.getValue()));
-                onNext.accept(editingExam);
+                Exam exam = context.getExam();
+                if (exam == null) exam = new Exam();
+
+                exam.setSubject(subjectField.getText().trim());
+                exam.setDurationMinutes((int) durationSpinner.getValue());
+                exam.setStartDate(convert((Date) startDateSpinner.getValue()));
+                exam.setEndDate(convert((Date) endDateSpinner.getValue()));
+
+                context.setExam(exam);
+
+                // 다음 화면: 문제 입력 패널로 교체
+                parentFrame.setContentPane(new QuestionEditorPanel(context,
+                        () -> parentFrame.setContentPane(new ExamEditorPanel(context, onBack, parentFrame)),
+                        () -> System.out.println("다음 단계로 이동 예정")));
+                parentFrame.revalidate();
             }
         });
 
+        panel.add(backButton);
+        panel.add(nextButton);
         return panel;
     }
 
     private void loadExamIfEditing() {
-        if (editingExam != null) {
-            subjectField.setText(editingExam.getSubject());
-            durationSpinner.setValue(editingExam.getDurationMinutes());
-            startDateSpinner.setValue(java.sql.Timestamp.valueOf(editingExam.getStartDate()));
-            endDateSpinner.setValue(java.sql.Timestamp.valueOf(editingExam.getEndDate()));
+        Exam exam = context.getExam();
+        if (exam != null) {
+            subjectField.setText(exam.getSubject());
+            durationSpinner.setValue(exam.getDurationMinutes());
+            startDateSpinner.setValue(java.sql.Timestamp.valueOf(exam.getStartDate()));
+            endDateSpinner.setValue(java.sql.Timestamp.valueOf(exam.getEndDate()));
         }
     }
 
