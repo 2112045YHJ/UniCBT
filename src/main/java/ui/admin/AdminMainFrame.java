@@ -31,7 +31,7 @@ public class AdminMainFrame extends BaseFrame {
     private void initScreens() {
         addScreen("Profile", new ProfilePanel(user));
 //        addScreen("StudentMgmt", new StudentMgmtPanel(user));
-//        addScreen("ExamMgmt", new ExamMgmtPanel(user));
+        addScreen("ExamMgmt", new ExamMgmtPanel());
 //        addScreen("ExamProgress", new ExamProgressPanel(user));
 //        addScreen("Stats", new ExamStatsPanel(user));
 //        addScreen("SurveyMgmt", new SurveyMgmtPanel(user));
