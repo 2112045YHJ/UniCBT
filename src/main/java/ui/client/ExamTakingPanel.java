@@ -39,12 +39,8 @@ public class ExamTakingPanel extends JPanel {
 
     // <문제ID, 선택한 답>
     private final Map<Integer, String> selectedAnswers = new HashMap<>();
-    // <문제ID, ButtonGroup>
-    private final Map<Integer, ButtonGroup> questionGroups = new HashMap<>();
     // index -> navigation button
     private final Map<Integer, JButton> navButtons = new HashMap<>();
-    // questionId -> index map
-    private final Map<Integer, Integer> questionIndexMap = new HashMap<>();
 
     public ExamTakingPanel(User user, int examId, String subject, LocalDateTime examEndTime) throws ServiceException {
         this.user = user;
@@ -58,7 +54,6 @@ public class ExamTakingPanel extends JPanel {
 
     private void initComponents() {
         setLayout(new BorderLayout(10, 10));
-        // 상단: 과목명 + 남은 시간
         JPanel topPanel = new JPanel(new BorderLayout());
         subjectLabel = new JLabel();
         subjectLabel.setFont(new Font("맑은 고딕", Font.BOLD, 16));
@@ -68,12 +63,10 @@ public class ExamTakingPanel extends JPanel {
         topPanel.add(timerLabel, BorderLayout.EAST);
         add(topPanel, BorderLayout.NORTH);
 
-        // 중앙: CardLayout 으로 문제 페이지 전환
         cardLayout = new CardLayout();
         questionsContainer = new JPanel(cardLayout);
         add(questionsContainer, BorderLayout.CENTER);
 
-        // 우측: 네비게이션 패널
         JPanel navPanel = new JPanel(new BorderLayout(5,5));
         JPanel btnGrid = new JPanel(new GridLayout(0, 5, 5, 5));
         navPanel.add(new JScrollPane(btnGrid), BorderLayout.CENTER);
@@ -94,17 +87,16 @@ public class ExamTakingPanel extends JPanel {
             add(new JLabel("출제된 문제가 없습니다."), BorderLayout.CENTER);
             return;
         }
-        // 네비 버튼 그리드 참조
         JScrollPane sp = (JScrollPane)((JPanel)getComponent(2)).getComponent(0);
         JPanel btnGrid = (JPanel)sp.getViewport().getView();
 
         for (int i = 0; i < questions.size(); i++) {
             QuestionFull qf = questions.get(i);
-            questionIndexMap.put(qf.getQuestionId(), i);
             JPanel page = createQuestionPage(qf, i);
             questionsContainer.add(page, String.valueOf(i));
 
             JButton numBtn = new JButton(String.valueOf(i + 1));
+            numBtn.setOpaque(true);
             navButtons.put(i, numBtn);
             int idx = i;
             numBtn.addActionListener(e -> cardLayout.show(questionsContainer, String.valueOf(idx)));
@@ -150,7 +142,6 @@ public class ExamTakingPanel extends JPanel {
         }
         panel.add(optionsPanel, BorderLayout.CENTER);
 
-        // 기존 선택 로드
         if (selectedAnswers.containsKey(qf.getQuestionId())) {
             String sel = selectedAnswers.get(qf.getQuestionId());
             for (AbstractButton btn : Collections.list(group.getElements())) {
@@ -159,7 +150,6 @@ public class ExamTakingPanel extends JPanel {
                 if (val.equals(sel)) btn.setSelected(true);
             }
         }
-        questionGroups.put(qf.getQuestionId(), group);
 
         JPanel submitPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
         JButton submitBtn = new JButton("제출");
@@ -198,6 +188,7 @@ public class ExamTakingPanel extends JPanel {
     private void markAnswered(int idx) {
         JButton btn = navButtons.get(idx);
         if (btn != null) {
+            btn.setOpaque(true);
             btn.setBackground(ANSWERED_COLOR);
         }
     }
