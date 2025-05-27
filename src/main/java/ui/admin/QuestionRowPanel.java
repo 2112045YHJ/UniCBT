@@ -1,9 +1,7 @@
 // 파일: main/java/ui/admin/QuestionRowPanel.java
 package main.java.ui.admin;
 
-import main.java.model.QuestionFull;
-import main.java.model.QuestionOption;
-import main.java.model.QuestionType;
+import main.java.model.*;
 
 import javax.swing.*;
 import java.awt.*;
@@ -126,23 +124,39 @@ public class QuestionRowPanel extends JPanel {
 
     public QuestionFull toQuestionFull() {
         QuestionFull qf = new QuestionFull();
-        qf.setQuestionText(questionField.getText().trim());
+
+        QuestionBank qb = new QuestionBank();
+        qb.setQuestionText(questionField.getText().trim());
+        qb.setType(type.name());
+        qf.setQuestionBank(qb);
+
         qf.setType(type);
+        qf.setQuestionText(questionField.getText().trim());
+
+        AnswerKey ak = new AnswerKey();
 
         if (type == QuestionType.MCQ) {
             List<QuestionOption> options = new ArrayList<>();
             for (int i = 0; i < optionsFields.size(); i++) {
                 QuestionOption opt = new QuestionOption();
-                opt.setOptionLabel((char) ('1' + i));  // ← char 형으로 변경
+                opt.setOptionLabel((char) ('1' + i));
                 opt.setContent(optionsFields.get(i).getText().trim());
                 options.add(opt);
             }
             qf.setOptions(options);
-            qf.setCorrectLabel((String) correctBox.getSelectedItem());
+
+            String selected = (String) correctBox.getSelectedItem();
+            qf.setCorrectLabel(selected);
+            ak.setCorrectLabel(selected.charAt(0));  // ← AnswerKey용
         } else if (type == QuestionType.OX) {
-            qf.setCorrectText((String) correctBox.getSelectedItem());
+            String selected = (String) correctBox.getSelectedItem();
+            qf.setCorrectText(selected);
+            ak.setCorrectText(selected);  // ← AnswerKey용
         }
+
+        qf.setAnswerKey(ak); // 🛠️ 이걸 안 해줘서 오류 났던 거예요!
 
         return qf;
     }
+
 }
