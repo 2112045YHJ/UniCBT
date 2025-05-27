@@ -153,29 +153,28 @@ public class ExamDaoImpl implements ExamDao {
     @Override
     public List<String> findAssignedDepartmentsAndGrades(int examId) throws DaoException {
         String sql = """
-        SELECT d.name, a.grade
-        FROM exam_assignments a
-        JOIN departments d ON a.dpmt_id = d.dpmt_id
-        WHERE a.exam_id = ?
-        ORDER BY d.name, a.grade
-        """;
+        SELECT ed.dpmt_name, ea.grade
+        FROM exam_assignments ea
+        JOIN examsdepartment ed ON ea.dpmt_id = ed.dpmt_id
+        WHERE ea.exam_id = ?
+    """;
 
-        List<String> result = new ArrayList<>();
+        List<String> list = new ArrayList<>();
         try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
             pstmt.setInt(1, examId);
             try (ResultSet rs = pstmt.executeQuery()) {
                 while (rs.next()) {
-                    String department = rs.getString("name");
+                    String dpmt = rs.getString("dpmt_name");
                     int grade = rs.getInt("grade");
-                    result.add(department + " / " + grade + "학년");
+                    list.add(dpmt + " / " + grade + "학년");
                 }
             }
         } catch (SQLException e) {
             throw new DaoException("응시 대상 조회 실패", e);
         }
-
-        return result;
+        return list;
     }
+
     @Override
     public List<Exam> findAllByUser(int userId) throws DaoException {
         String sql = "SELECT DISTINCT e.* FROM exams e " +
