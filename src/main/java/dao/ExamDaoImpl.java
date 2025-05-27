@@ -153,10 +153,11 @@ public class ExamDaoImpl implements ExamDao {
     @Override
     public List<String> findAssignedDepartmentsAndGrades(int examId) throws DaoException {
         String sql = """
-        SELECT ed.dpmt_name, ea.grade
-        FROM exam_assignments ea
-        JOIN examsdepartment ed ON ea.dpmt_id = ed.dpmt_id
-        WHERE ea.exam_id = ?
+        SELECT d.dpmt_name, ed.grade
+        FROM examsdepartment ed
+        JOIN department d ON ed.dpmt_id = d.dpmt_id
+        WHERE ed.exam_id = ?
+        ORDER BY d.dpmt_name ASC, ed.grade ASC
     """;
 
         List<String> list = new ArrayList<>();
@@ -174,6 +175,7 @@ public class ExamDaoImpl implements ExamDao {
         }
         return list;
     }
+
 
     @Override
     public List<Exam> findAllByUser(int userId) throws DaoException {
