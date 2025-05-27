@@ -159,30 +159,65 @@ public class ExamMgmtPanel extends JPanel {
                 Exam exam = allExams.get(row);
                 switch (actionType) {
                     case "수정" -> {
+                        LocalDateTime now = LocalDateTime.now();
+                        if (!now.isBefore(exam.getStartDate()) && !now.isAfter(exam.getEndDate())) {
+                            JOptionPane.showMessageDialog(button, "진행 중인 시험은 수정할 수 없습니다.", "수정 불가", JOptionPane.WARNING_MESSAGE);
+                            break;
+                        }
+                        if (now.isAfter(exam.getEndDate())) {
+                            JOptionPane.showMessageDialog(button, "종료된 시험은 수정할 수 없습니다.", "수정 불가", JOptionPane.WARNING_MESSAGE);
+                            break;
+                        }
+
                         ExamCreationContext context = new ExamCreationContext();
                         context.setExam(exam);
-                        JFrame frame = new JFrame("시험 수정");
 
+                        JFrame frame = new JFrame("시험 수정");
                         ExamEditorPanel editorPanel = new ExamEditorPanel(
                                 context,
-                                () -> frame.dispose(),  // onBack: 닫기
-                                frame                   // parentFrame 전달
+                                () -> frame.dispose(),
+                                frame
                         );
-
                         frame.setContentPane(editorPanel);
                         frame.setSize(600, 400);
                         frame.setLocationRelativeTo(button);
                         frame.setVisible(true);
                     }
                     case "비활성화" -> {
-                        int confirm = JOptionPane.showConfirmDialog(button,
-                                "시험을 강제 비활성화 하시겠습니까?", "비활성화 확인",
-                                JOptionPane.YES_NO_OPTION);
+                        if (!exam.isActive()) {
+                            JOptionPane.showMessageDialog(button, "이미 비활성화된 시험입니다.", "알림", JOptionPane.INFORMATION_MESSAGE);
+                            break;
+                        }
+
+                        int confirm = JOptionPane.showConfirmDialog(
+                                button,
+                                "시험을 강제 비활성화 하시겠습니까?",
+                                "비활성화 확인",
+                                JOptionPane.YES_NO_OPTION
+                        );
+
                         if (confirm == JOptionPane.YES_OPTION) {
-                            JOptionPane.showMessageDialog(button, "비활성화 처리 완료 (예시)");
+                            try {
+                                examService.disableExam(exam.getExamId()); // 실제 DB 상태 변경
+                                JOptionPane.showMessageDialog(button, "시험이 비활성화되었습니다.");
+                            } catch (ServiceException ex) {
+                                JOptionPane.showMessageDialog(button, "비활성화 중 오류 발생: " + ex.getMessage(), "오류", JOptionPane.ERROR_MESSAGE);
+                            }
                         }
                     }
-                    case "응시 대상" -> JOptionPane.showMessageDialog(button, "응시 대상 확인 기능 (예시)");
+                    case "응시 대상" -> {
+                        try {
+                            List<String> targets = examService.getAssignedDepartmentsAndGrades(exam.getExamId());
+                            if (targets.isEmpty()) {
+                                JOptionPane.showMessageDialog(button, "응시 대상이 지정되지 않았습니다.");
+                            } else {
+                                String msg = String.join("\n", targets);
+                                JOptionPane.showMessageDialog(button, msg, "응시 대상", JOptionPane.INFORMATION_MESSAGE);
+                            }
+                        } catch (ServiceException e) {
+                            JOptionPane.showMessageDialog(button, "응시 대상 조회 실패:\n" + e.getMessage());
+                        }
+                    }
                 }
             }
             clicked = false;

@@ -141,6 +141,42 @@ public class ExamDaoImpl implements ExamDao {
     }
 
     @Override
+    public void disableExam(int examId) throws DaoException {
+        String sql = "UPDATE exams SET end_date = NOW() WHERE exam_id = ?";
+        try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setInt(1, examId);
+            pstmt.executeUpdate();
+        } catch (SQLException e) {
+            throw new DaoException("시험 비활성화 실패", e);
+        }
+    }
+    @Override
+    public List<String> findAssignedDepartmentsAndGrades(int examId) throws DaoException {
+        String sql = """
+        SELECT d.name, a.grade
+        FROM exam_assignments a
+        JOIN departments d ON a.dpmt_id = d.dpmt_id
+        WHERE a.exam_id = ?
+        ORDER BY d.name, a.grade
+        """;
+
+        List<String> result = new ArrayList<>();
+        try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setInt(1, examId);
+            try (ResultSet rs = pstmt.executeQuery()) {
+                while (rs.next()) {
+                    String department = rs.getString("name");
+                    int grade = rs.getInt("grade");
+                    result.add(department + " / " + grade + "학년");
+                }
+            }
+        } catch (SQLException e) {
+            throw new DaoException("응시 대상 조회 실패", e);
+        }
+
+        return result;
+    }
+    @Override
     public List<Exam> findAllByUser(int userId) throws DaoException {
         String sql = "SELECT DISTINCT e.* FROM exams e " +
                 "JOIN examresults r ON e.exam_id = r.exam_id " +

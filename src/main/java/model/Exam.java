@@ -82,4 +82,9 @@ public class Exam {
     public int hashCode() {
         return Integer.hashCode(examId);
     }
+
+    public boolean isActive() {
+        LocalDateTime now = LocalDateTime.now();
+        return startDate.isBefore(now) && endDate.isAfter(now);
+    }
 }

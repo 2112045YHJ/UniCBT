@@ -48,4 +48,6 @@ public interface ExamService {
     void assignExamToUsers(int examId, List<Integer> userIds) throws ServiceException;
     List<Exam> getAllExams() throws ServiceException;
 
+    void disableExam(int examId) throws ServiceException;
+    List<String> getAssignedDepartmentsAndGrades(int examId) throws ServiceException;
 }

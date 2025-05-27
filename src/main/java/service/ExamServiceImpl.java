@@ -247,5 +247,21 @@ public class ExamServiceImpl implements ExamService {
             throw new ServiceException("전체 시험 조회 실패", e);
         }
     }
+    @Override
+    public void disableExam(int examId) throws ServiceException {
+        try {
+            examDao.disableExam(examId);
+        } catch (DaoException e) {
+            throw new ServiceException("시험 비활성화 실패", e);
+        }
+    }
+    @Override
+    public List<String> getAssignedDepartmentsAndGrades(int examId) throws ServiceException {
+        try {
+            return examDao.findAssignedDepartmentsAndGrades(examId);
+        } catch (DaoException e) {
+            throw new ServiceException("응시 대상 조회 실패", e);
+        }
+    }
 
 }
