@@ -31,13 +31,19 @@ public class ExamMgmtPanel extends JPanel {
         JButton addExamBtn = new JButton("시험 추가");
         addExamBtn.addActionListener(e -> {
             ExamCreationContext context = new ExamCreationContext();
-
             JFrame frame = new JFrame("시험 등록");
+
             ExamEditorPanel editorPanel = new ExamEditorPanel(
                     context,
-                    () -> frame.dispose(),  // onBack: 창 닫기
-                    frame                   // parentFrame 전달
+                    frame::dispose,
+                    exam -> {
+                        context.setExam(exam);
+                        JOptionPane.showMessageDialog(frame, "시험 정보 입력 완료: " + exam.getSubject());
+                        frame.dispose();
+                    }
             );
+
+            frame.setContentPane(editorPanel);
             frame.setSize(600, 400);
             frame.setLocationRelativeTo(null);
             frame.setVisible(true);
@@ -159,13 +165,18 @@ public class ExamMgmtPanel extends JPanel {
                     case "수정" -> {
                         ExamCreationContext context = new ExamCreationContext();
                         context.setExam(exam);
-
                         JFrame frame = new JFrame("시험 수정");
+
                         ExamEditorPanel editorPanel = new ExamEditorPanel(
                                 context,
-                                () -> frame.dispose(),  // onBack
-                                frame
+                                frame::dispose,
+                                updatedExam -> {
+                                    context.setExam(updatedExam);
+                                    JOptionPane.showMessageDialog(frame, "시험 수정 완료: " + updatedExam.getSubject());
+                                    frame.dispose();
+                                }
                         );
+
                         frame.setContentPane(editorPanel);
                         frame.setSize(600, 400);
                         frame.setLocationRelativeTo(button);

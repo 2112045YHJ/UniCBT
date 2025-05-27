@@ -11,7 +11,6 @@ import java.util.Date;
 import java.util.function.Consumer;
 
 public class ExamEditorPanel extends JPanel {
-
     private final JTextField subjectField = new JTextField();
     private final JSpinner durationSpinner = new JSpinner(new SpinnerNumberModel(60, 10, 180, 5));
     private final JSpinner startDateSpinner = new JSpinner(new SpinnerDateModel());
@@ -22,12 +21,12 @@ public class ExamEditorPanel extends JPanel {
 
     private final ExamCreationContext context;
     private final Runnable onBack;
-    private final JFrame parentFrame;
+    private final Consumer<Exam> onSubmit;
 
-    public ExamEditorPanel(ExamCreationContext context, Runnable onBack, JFrame parentFrame) {
+    public ExamEditorPanel(ExamCreationContext context, Runnable onBack, Consumer<Exam> onSubmit) {
         this.context = context;
         this.onBack = onBack;
-        this.parentFrame = parentFrame;
+        this.onSubmit = onSubmit;
 
         setLayout(new BorderLayout());
         add(createHeader(), BorderLayout.NORTH);
@@ -81,12 +80,7 @@ public class ExamEditorPanel extends JPanel {
                 exam.setEndDate(convert((Date) endDateSpinner.getValue()));
 
                 context.setExam(exam);
-
-                // 다음 화면: 문제 입력 패널로 교체
-                parentFrame.setContentPane(new QuestionEditorPanel(context,
-                        () -> parentFrame.setContentPane(new ExamEditorPanel(context, onBack, parentFrame)),
-                        () -> System.out.println("다음 단계로 이동 예정")));
-                parentFrame.revalidate();
+                onSubmit.accept(exam); // 호출자에게 시험 결과 전달
             }
         });
 
@@ -120,7 +114,7 @@ public class ExamEditorPanel extends JPanel {
             return false;
         }
         if (!end.after(start)) {
-            showError("마감일은 시작일보다 늦어야 합니다.");
+            showError("마감일은 시작일보다 시작일보다 늦어야 합니다.");
             return false;
         }
 
