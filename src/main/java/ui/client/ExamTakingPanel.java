@@ -79,7 +79,7 @@ public class ExamTakingPanel extends JPanel {
 
         // 우측: 네비게이션 패널
         JPanel navPanel = new JPanel(new BorderLayout(5, 5));
-        JPanel btnGrid = new JPanel(new GridLayout(0,2 , 5, 5));
+        JPanel btnGrid = new JPanel(new GridLayout(0, 2, 5, 5));
         navPanel.add(new JScrollPane(btnGrid), BorderLayout.CENTER);
 
         JPanel arrowPanel = new JPanel(new GridLayout(1, 2, 5, 5));
