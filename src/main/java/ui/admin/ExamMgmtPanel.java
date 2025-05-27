@@ -1,5 +1,6 @@
 package main.java.ui.admin;
 
+import main.java.context.ExamCreationContext;
 import main.java.model.Exam;
 import main.java.service.ExamService;
 import main.java.service.ExamServiceImpl;
@@ -17,6 +18,7 @@ import java.util.List;
 
 public class ExamMgmtPanel extends JPanel {
     private final ExamService examService = new ExamServiceImpl();
+    private List<Exam> allExams = new ArrayList<>();
 
     public ExamMgmtPanel() {
         setLayout(new BorderLayout());
@@ -26,12 +28,22 @@ public class ExamMgmtPanel extends JPanel {
         header.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
         add(header, BorderLayout.NORTH);
 
-        // 상단 시험 추가 버튼
         JButton addExamBtn = new JButton("시험 추가");
         addExamBtn.addActionListener(e -> {
-            // TODO: ExamEditorPanel 또는 새로운 프레임 호출
-            JOptionPane.showMessageDialog(this, "시험 추가 버튼 클릭됨!");
+            ExamCreationContext context = new ExamCreationContext();
+
+            JFrame frame = new JFrame("시험 등록");
+            frame.setContentPane(new ExamEditorPanel(null, exam -> {
+                context.setExam(exam);
+                JOptionPane.showMessageDialog(frame, "시험 정보 입력 완료: " + exam.getSubject());
+                frame.dispose();
+                // TODO: 이후 문제 입력 화면 등으로 연결 가능
+            }, frame::dispose));
+            frame.setSize(600, 400);
+            frame.setLocationRelativeTo(null);
+            frame.setVisible(true);
         });
+
         JPanel topPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
         topPanel.add(addExamBtn);
         add(topPanel, BorderLayout.SOUTH);
@@ -39,7 +51,7 @@ public class ExamMgmtPanel extends JPanel {
         JTabbedPane tabbedPane = new JTabbedPane();
 
         try {
-            List<Exam> allExams = examService.getAllExams();
+            allExams = examService.getAllExams();
             Map<Integer, List<Exam>> grouped = new TreeMap<>(Comparator.reverseOrder());
             for (Exam exam : allExams) {
                 int year = exam.getStartDate().getYear();
@@ -65,7 +77,7 @@ public class ExamMgmtPanel extends JPanel {
         DefaultTableModel model = new DefaultTableModel(null, cols) {
             @Override
             public boolean isCellEditable(int row, int column) {
-                return column >= 5; // 버튼만 클릭 가능
+                return column >= 5;
             }
         };
         JTable table = new JTable(model);
@@ -84,9 +96,7 @@ public class ExamMgmtPanel extends JPanel {
             else if (now.isAfter(exam.getEndDate())) status = "완료";
             else status = "진행중";
 
-            model.addRow(new Object[]{
-                    subject, start, end, duration, status, "수정", "비활성화", "응시 대상"
-            });
+            model.addRow(new Object[]{subject, start, end, duration, status, "수정", "비활성화", "응시 대상"});
         }
 
         TableColumn modifyCol = table.getColumn("수정");
@@ -105,9 +115,7 @@ public class ExamMgmtPanel extends JPanel {
         return panel;
     }
 
-    // -------------------------------
-    // 내부 버튼 렌더러 및 에디터 정의
-    // -------------------------------
+    // 렌더러 공통
     static class ButtonRenderer extends JButton implements TableCellRenderer {
         public ButtonRenderer() {
             setOpaque(true);
@@ -121,11 +129,13 @@ public class ExamMgmtPanel extends JPanel {
         }
     }
 
-    static class ButtonEditor extends DefaultCellEditor {
+    // 에디터 공통
+    class ButtonEditor extends DefaultCellEditor {
         private final JButton button = new JButton();
         private String label;
         private boolean clicked;
         private final String actionType;
+        private int row;
 
         public ButtonEditor(JCheckBox checkBox, String actionType) {
             super(checkBox);
@@ -136,7 +146,8 @@ public class ExamMgmtPanel extends JPanel {
 
         public Component getTableCellEditorComponent(JTable table, Object value,
                                                      boolean isSelected, int row, int col) {
-            label = (value == null) ? "" : value.toString();
+            this.label = (value == null) ? "" : value.toString();
+            this.row = row;
             button.setText(label);
             clicked = true;
             return button;
@@ -144,18 +155,30 @@ public class ExamMgmtPanel extends JPanel {
 
         public Object getCellEditorValue() {
             if (clicked) {
+                Exam exam = allExams.get(row);
                 switch (actionType) {
-                    case "수정" -> JOptionPane.showMessageDialog(button, "시험 수정 기능 연결 예정");
+                    case "수정" -> {
+                        ExamCreationContext context = new ExamCreationContext();
+                        context.setExam(exam);
+                        JFrame frame = new JFrame("시험 수정");
+                        frame.setContentPane(new ExamEditorPanel(exam, updatedExam -> {
+                            context.setExam(updatedExam);
+                            JOptionPane.showMessageDialog(frame, "수정 완료: " + updatedExam.getSubject());
+                            frame.dispose();
+                        }, frame::dispose));
+                        frame.setSize(600, 400);
+                        frame.setLocationRelativeTo(button);
+                        frame.setVisible(true);
+                    }
                     case "비활성화" -> {
-                        int result = JOptionPane.showConfirmDialog(button,
-                                "시험을 강제 비활성화 하시겠습니까?",
-                                "시험 비활성화 확인",
+                        int confirm = JOptionPane.showConfirmDialog(button,
+                                "시험을 강제 비활성화 하시겠습니까?", "비활성화 확인",
                                 JOptionPane.YES_NO_OPTION);
-                        if (result == JOptionPane.YES_OPTION) {
+                        if (confirm == JOptionPane.YES_OPTION) {
                             JOptionPane.showMessageDialog(button, "비활성화 처리 완료 (예시)");
                         }
                     }
-                    case "응시 대상" -> JOptionPane.showMessageDialog(button, "응시 대상 확인 기능 연결 예정");
+                    case "응시 대상" -> JOptionPane.showMessageDialog(button, "응시 대상 확인 기능 (예시)");
                 }
             }
             clicked = false;
