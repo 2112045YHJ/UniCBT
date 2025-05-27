@@ -309,7 +309,7 @@ public class ExamServiceImpl implements ExamService {
                 }
             }
         } catch (Exception e) {
-            throw new ServiceException("시험 저장 중 오류 발생", e);
+            throw new ServiceException("시험 저장 중 오류 발생: " + e.getMessage(), e);
         }
     }
 
