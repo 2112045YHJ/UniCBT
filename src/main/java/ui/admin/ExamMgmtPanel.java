@@ -7,6 +7,8 @@ import main.java.service.ServiceException;
 
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
+import javax.swing.table.TableCellRenderer;
+import javax.swing.table.TableColumn;
 import java.awt.*;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -23,6 +25,16 @@ public class ExamMgmtPanel extends JPanel {
         header.setFont(new Font("맑은 고딕", Font.BOLD, 20));
         header.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
         add(header, BorderLayout.NORTH);
+
+        // 상단 시험 추가 버튼
+        JButton addExamBtn = new JButton("시험 추가");
+        addExamBtn.addActionListener(e -> {
+            // TODO: ExamEditorPanel 또는 새로운 프레임 호출
+            JOptionPane.showMessageDialog(this, "시험 추가 버튼 클릭됨!");
+        });
+        JPanel topPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        topPanel.add(addExamBtn);
+        add(topPanel, BorderLayout.SOUTH);
 
         JTabbedPane tabbedPane = new JTabbedPane();
 
@@ -53,7 +65,7 @@ public class ExamMgmtPanel extends JPanel {
         DefaultTableModel model = new DefaultTableModel(null, cols) {
             @Override
             public boolean isCellEditable(int row, int column) {
-                return false;
+                return column >= 5; // 버튼만 클릭 가능
             }
         };
         JTable table = new JTable(model);
@@ -72,12 +84,87 @@ public class ExamMgmtPanel extends JPanel {
             else if (now.isAfter(exam.getEndDate())) status = "완료";
             else status = "진행중";
 
-            model.addRow(new Object[]{subject, start, end, duration, status, "수정", "비활성화", "응시 대상"});
+            model.addRow(new Object[]{
+                    subject, start, end, duration, status, "수정", "비활성화", "응시 대상"
+            });
         }
 
-        JScrollPane scrollPane = new JScrollPane(table);
-        panel.add(scrollPane, BorderLayout.CENTER);
+        TableColumn modifyCol = table.getColumn("수정");
+        TableColumn disableCol = table.getColumn("비활성화");
+        TableColumn targetCol = table.getColumn("응시 대상");
 
+        modifyCol.setCellRenderer(new ButtonRenderer());
+        disableCol.setCellRenderer(new ButtonRenderer());
+        targetCol.setCellRenderer(new ButtonRenderer());
+
+        modifyCol.setCellEditor(new ButtonEditor(new JCheckBox(), "수정"));
+        disableCol.setCellEditor(new ButtonEditor(new JCheckBox(), "비활성화"));
+        targetCol.setCellEditor(new ButtonEditor(new JCheckBox(), "응시 대상"));
+
+        panel.add(new JScrollPane(table), BorderLayout.CENTER);
         return panel;
+    }
+
+    // -------------------------------
+    // 내부 버튼 렌더러 및 에디터 정의
+    // -------------------------------
+    static class ButtonRenderer extends JButton implements TableCellRenderer {
+        public ButtonRenderer() {
+            setOpaque(true);
+        }
+
+        public Component getTableCellRendererComponent(JTable table, Object value,
+                                                       boolean isSelected, boolean hasFocus,
+                                                       int row, int column) {
+            setText((value == null) ? "" : value.toString());
+            return this;
+        }
+    }
+
+    static class ButtonEditor extends DefaultCellEditor {
+        private final JButton button = new JButton();
+        private String label;
+        private boolean clicked;
+        private final String actionType;
+
+        public ButtonEditor(JCheckBox checkBox, String actionType) {
+            super(checkBox);
+            this.actionType = actionType;
+            button.setOpaque(true);
+            button.addActionListener(e -> fireEditingStopped());
+        }
+
+        public Component getTableCellEditorComponent(JTable table, Object value,
+                                                     boolean isSelected, int row, int col) {
+            label = (value == null) ? "" : value.toString();
+            button.setText(label);
+            clicked = true;
+            return button;
+        }
+
+        public Object getCellEditorValue() {
+            if (clicked) {
+                switch (actionType) {
+                    case "수정" -> JOptionPane.showMessageDialog(button, "시험 수정 기능 연결 예정");
+                    case "비활성화" -> {
+                        int result = JOptionPane.showConfirmDialog(button,
+                                "시험을 강제 비활성화 하시겠습니까?",
+                                "시험 비활성화 확인",
+                                JOptionPane.YES_NO_OPTION);
+                        if (result == JOptionPane.YES_OPTION) {
+                            JOptionPane.showMessageDialog(button, "비활성화 처리 완료 (예시)");
+                        }
+                    }
+                    case "응시 대상" -> JOptionPane.showMessageDialog(button, "응시 대상 확인 기능 연결 예정");
+                }
+            }
+            clicked = false;
+            return label;
+        }
+
+        public boolean stopCellEditing() {
+            clicked = false;
+            return super.stopCellEditing();
+        }
     }
 }
