@@ -99,4 +99,25 @@ public class UserDaoImpl implements UserDao {
             throw new DaoException("Error deleting User", e);
         }
     }
+
+    public List<User> findByDpmtAndGrade(int dpmtId, int grade) throws DaoException {
+        String sql = "SELECT * FROM users WHERE dpmt_id = ? AND grade = ? AND is_active = 1";
+        try (Connection conn = DBConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, dpmtId);
+            ps.setInt(2, grade);
+            ResultSet rs = ps.executeQuery();
+            List<User> list = new ArrayList<>();
+            while (rs.next()) {
+                User u = new User();
+                u.setUserId(rs.getInt("user_id"));
+                u.setName(rs.getString("name"));
+                // ...필요 시 다른 필드도
+                list.add(u);
+            }
+            return list;
+        } catch (SQLException e) {
+            throw new DaoException("학과/학년별 학생 조회 실패", e);
+        }
+    }
 }

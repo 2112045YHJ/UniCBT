@@ -5,7 +5,9 @@ import main.java.util.DBConnection;
 
 import java.sql.*;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class ExamsDepartmentDaoImpl implements ExamsDepartmentDao {
     private final Connection conn = DBConnection.getConnection();
@@ -81,4 +83,25 @@ public class ExamsDepartmentDaoImpl implements ExamsDepartmentDao {
             throw new DaoException("deleteByExamId 실패: examId=" + examId, e);
         }
     }
+
+    @Override
+    public Map<Integer, List<Integer>> findDepartmentAndGradesGrouped(int examId) throws DaoException {
+        String sql = "SELECT dpmt_id, grade FROM examsdepartment WHERE exam_id = ?";
+        Map<Integer, List<Integer>> map = new HashMap<>();
+
+        try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setInt(1, examId);
+            try (ResultSet rs = pstmt.executeQuery()) {
+                while (rs.next()) {
+                    int dpmtId = rs.getInt("dpmt_id");
+                    int grade = rs.getInt("grade");
+                    map.computeIfAbsent(dpmtId, k -> new ArrayList<>()).add(grade);
+                }
+            }
+        } catch (SQLException e) {
+            throw new DaoException("부서별 학년 ID 조회 실패", e);
+        }
+        return map;
+    }
+
 }

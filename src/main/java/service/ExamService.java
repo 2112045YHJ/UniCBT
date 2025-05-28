@@ -51,6 +51,9 @@ public interface ExamService {
 
     void disableExam(int examId) throws ServiceException;
     List<String> getAssignedDepartmentsAndGrades(int examId) throws ServiceException;
+    List<int[]> getAssignedDepartmentAndGradeIds(int examId) throws ServiceException;
+
 
     void saveExamWithDetails(ExamCreationContext context) throws ServiceException;
+    List<QuestionFull> getQuestionsByExamId(int examId) throws ServiceException;
 }

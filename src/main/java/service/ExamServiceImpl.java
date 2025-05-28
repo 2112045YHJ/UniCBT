@@ -266,6 +266,19 @@ public class ExamServiceImpl implements ExamService {
             throw new ServiceException("응시 대상 조회 실패", e);
         }
     }
+
+    @Override
+    public List<int[]> getAssignedDepartmentAndGradeIds(int examId) throws ServiceException {
+        try {
+            return examDao.getAssignedDepartmentAndGradeIds(examId);
+        } catch (DaoException e) {
+            throw new ServiceException("응시 대상 ID 조회 실패", e);
+        }
+    }
+
+
+
+
     @Override
     public void saveExamWithDetails(ExamCreationContext context) throws ServiceException {
         try {
@@ -308,9 +321,39 @@ public class ExamServiceImpl implements ExamService {
                     examsDepartmentDao.save(ed);
                 }
             }
+
+            List<Integer> assignedUserIds = new ArrayList<>();
+            try {
+                UserDao userDao = new UserDaoImpl();
+                for (int grade : context.getTargetGrades()) {
+                    for (int dpmtId : context.getTargetDepartments()) {
+                        List<User> users = userDao.findByDpmtAndGrade(dpmtId, grade);
+                        for (User u : users) {
+                            assignedUserIds.add(u.getUserId());
+                        }
+                    }
+                }
+
+                if (!assignedUserIds.isEmpty()) {
+                    ExamAssignmentDao assignmentDao = new ExamAssignmentDaoImpl();
+                    assignmentDao.assignStudents(examId, assignedUserIds);
+                }
+            } catch (Exception e) {
+                throw new ServiceException("시험 응시 대상 학생 자동 배정 실패", e);
+            }
         } catch (Exception e) {
             throw new ServiceException("시험 저장 중 오류 발생: " + e.getMessage(), e);
         }
     }
+    @Override
+    public List<QuestionFull> getQuestionsByExamId(int examId) throws ServiceException {
+        try {
+            QuestionService qs = new QuestionServiceImpl();
+            return qs.getQuestionsByExam(examId);  // 이미 구현된 문제 조회 메서드 활용
+        } catch (Exception e) {
+            throw new ServiceException("기존 문제 불러오기 실패", e);
+        }
+    }
+
 
 }

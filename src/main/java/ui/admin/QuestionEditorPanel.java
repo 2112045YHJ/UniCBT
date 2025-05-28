@@ -20,11 +20,13 @@ public class QuestionEditorPanel extends JPanel {
     private final ExamCreationContext context;
     private final Runnable onBack;
     private final Runnable onNext;
+    private final JFrame parentFrame;
 
-    public QuestionEditorPanel(ExamCreationContext context, Runnable onBack, Runnable onNext) {
+    public QuestionEditorPanel(ExamCreationContext context, Runnable onBack, Runnable onNext, JFrame parentFrame) {
         this.context = context;
         this.onBack = onBack;
         this.onNext = onNext;
+        this.parentFrame = parentFrame;
 
         setLayout(new BorderLayout());
 
@@ -33,6 +35,13 @@ public class QuestionEditorPanel extends JPanel {
         add(scrollPane, BorderLayout.CENTER);
         add(createTopPanel(), BorderLayout.NORTH);
         add(createBottomPanel(), BorderLayout.SOUTH);
+
+        // ✅ 기존 문제 복원
+        if (context.getQuestions() != null) {
+            for (QuestionFull q : context.getQuestions()) {
+                addQuestionRow(q);  // 빈 값 포함하여 방어적으로 추가
+            }
+        }
     }
 
     private JPanel createTopPanel() {
@@ -50,29 +59,36 @@ public class QuestionEditorPanel extends JPanel {
 
     private JPanel createBottomPanel() {
         JPanel panel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-        prevBtn.addActionListener(e -> onBack.run());
+
+        prevBtn.addActionListener(e -> {
+            // 유효성 검사 없이 현재 상태 저장
+            List<QuestionFull> savedList = collectQuestionsWithoutValidation();
+            context.setQuestions(savedList);
+
+            parentFrame.setContentPane(new ExamEditorPanel(context, onBack, onNext, parentFrame));
+            parentFrame.revalidate();
+            parentFrame.repaint();
+        });
+
         nextBtn.addActionListener(e -> {
-            List<QuestionFull> questionList = collectQuestions();
+            List<QuestionFull> questionList = collectQuestions();  // 유효성 검사 포함
             if (questionList == null || questionList.isEmpty()) {
                 JOptionPane.showMessageDialog(this, "문제를 한 개 이상 등록해주세요.", "오류", JOptionPane.WARNING_MESSAGE);
                 return;
             }
             context.setQuestions(questionList);
 
-            // ✅ TargetSelectionDialog 호출
             TargetSelectionDialog dialog = new TargetSelectionDialog(
-                    (JFrame) SwingUtilities.getWindowAncestor(this),
+                    parentFrame,
                     context,
                     () -> {
-                        JFrame frame = (JFrame) SwingUtilities.getWindowAncestor(this);
-                        frame.setContentPane(new ExamMgmtPanel());
-                        frame.revalidate();
-                        frame.repaint();
-                    }
+                        parentFrame.dispose();
+                        onNext.run();
+                    },
+                    parentFrame
             );
             dialog.setVisible(true);
 
-            // 응시 대상이 정상적으로 설정된 경우에만 다음 단계로
             if (context.getTargetGrades() != null && !context.getTargetGrades().isEmpty()
                     && context.getTargetDepartments() != null && !context.getTargetDepartments().isEmpty()) {
                 onNext.run();
@@ -86,6 +102,15 @@ public class QuestionEditorPanel extends JPanel {
 
     private void addQuestionRow(QuestionType type) {
         QuestionRowPanel row = new QuestionRowPanel(type, this);
+        questionRows.add(row);
+        questionListPanel.add(row);
+        renumberQuestions();
+        revalidate();
+        repaint();
+    }
+
+    private void addQuestionRow(QuestionFull question) {
+        QuestionRowPanel row = new QuestionRowPanel(question, this);
         questionRows.add(row);
         questionListPanel.add(row);
         renumberQuestions();
@@ -111,6 +136,15 @@ public class QuestionEditorPanel extends JPanel {
         List<QuestionFull> result = new ArrayList<>();
         for (QuestionRowPanel row : questionRows) {
             if (!row.validateInputs()) return null;
+            result.add(row.toQuestionFull());
+        }
+        return result;
+    }
+
+    // ✅ 유효성 검사 없이 저장
+    private List<QuestionFull> collectQuestionsWithoutValidation() {
+        List<QuestionFull> result = new ArrayList<>();
+        for (QuestionRowPanel row : questionRows) {
             result.add(row.toQuestionFull());
         }
         return result;

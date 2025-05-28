@@ -1,4 +1,3 @@
-// 파일: main/java/ui/admin/QuestionRowPanel.java
 package main.java.ui.admin;
 
 import main.java.model.*;
@@ -17,10 +16,39 @@ public class QuestionRowPanel extends JPanel {
     private List<JTextField> optionsFields; // 객관식 보기
     private JComboBox<String> correctBox;
 
+    // 생성자 - 직접 유형 지정
     public QuestionRowPanel(QuestionType type, QuestionEditorPanel parent) {
         this.type = type;
         this.parentPanel = parent;
         initComponents();
+    }
+
+    // 생성자 - 복원용 QuestionFull 기반
+    public QuestionRowPanel(QuestionFull qf, QuestionEditorPanel parent) {
+        this.type = qf.getType();
+        this.parentPanel = parent;
+        initComponents(); // 기본 UI 구성
+
+        // 문제 내용
+        if (qf.getQuestionText() != null) {
+            questionField.setText(qf.getQuestionText());
+        }
+
+        // 객관식 보기 복원
+        if (type == QuestionType.MCQ && qf.getOptions() != null) {
+            for (int i = 0; i < optionsFields.size(); i++) {
+                if (i < qf.getOptions().size()) {
+                    optionsFields.get(i).setText(qf.getOptions().get(i).getContent());
+                }
+            }
+        }
+
+        // 정답 복원
+        if (qf.getCorrectLabel() != null) {
+            correctBox.setSelectedItem(qf.getCorrectLabel());
+        } else if (qf.getCorrectText() != null) {
+            correctBox.setSelectedItem(qf.getCorrectText());
+        }
     }
 
     private void initComponents() {
@@ -95,6 +123,7 @@ public class QuestionRowPanel extends JPanel {
     public String getCorrectAnswer() {
         return (String) correctBox.getSelectedItem();
     }
+
     public boolean validateInputs() {
         String question = questionField.getText().trim();
         if (question.isEmpty()) {
@@ -147,16 +176,15 @@ public class QuestionRowPanel extends JPanel {
 
             String selected = (String) correctBox.getSelectedItem();
             qf.setCorrectLabel(selected);
-            ak.setCorrectLabel(selected.charAt(0));  // ← AnswerKey용
+            ak.setCorrectLabel(selected.charAt(0));
         } else if (type == QuestionType.OX) {
             String selected = (String) correctBox.getSelectedItem();
             qf.setCorrectText(selected);
-            ak.setCorrectText(selected);  // ← AnswerKey용
+            ak.setCorrectText(selected);
         }
 
-        qf.setAnswerKey(ak); // 🛠️ 이걸 안 해줘서 오류 났던 거예요!
+        qf.setAnswerKey(ak);
 
         return qf;
     }
-
 }

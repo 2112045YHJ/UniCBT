@@ -2,6 +2,7 @@ package main.java.ui.admin;
 
 import main.java.context.ExamCreationContext;
 import main.java.model.Exam;
+import main.java.model.QuestionFull;
 import main.java.service.ExamService;
 import main.java.service.ExamServiceImpl;
 import main.java.service.ServiceException;
@@ -19,9 +20,15 @@ import java.util.List;
 public class ExamMgmtPanel extends JPanel {
     private final ExamService examService = new ExamServiceImpl();
     private List<Exam> allExams = new ArrayList<>();
+    private JTabbedPane tabbedPane;
 
     public ExamMgmtPanel() {
         setLayout(new BorderLayout());
+        refreshExamList();
+    }
+
+    public void refreshExamList() {
+        removeAll();
 
         JLabel header = new JLabel("시험 관리");
         header.setFont(new Font("맑은 고딕", Font.BOLD, 20));
@@ -35,8 +42,12 @@ public class ExamMgmtPanel extends JPanel {
 
             ExamEditorPanel editorPanel = new ExamEditorPanel(
                     context,
-                    () -> frame.dispose(),  // onBack: 닫기
-                    frame                   // parentFrame 전달
+                    () -> frame.dispose(),
+                    () -> {
+                        frame.dispose();         // 창 닫고
+                        this.refreshExamList(); // ✅ 시험 목록 새로고침
+                    },
+                    frame
             );
 
             frame.setContentPane(editorPanel);
@@ -49,7 +60,7 @@ public class ExamMgmtPanel extends JPanel {
         topPanel.add(addExamBtn);
         add(topPanel, BorderLayout.SOUTH);
 
-        JTabbedPane tabbedPane = new JTabbedPane();
+        tabbedPane = new JTabbedPane();
 
         try {
             allExams = examService.getAllExams();
@@ -69,6 +80,9 @@ public class ExamMgmtPanel extends JPanel {
         }
 
         add(tabbedPane, BorderLayout.CENTER);
+
+        revalidate();
+        repaint();
     }
 
     private JPanel createExamTablePanel(List<Exam> exams) {
@@ -108,15 +122,14 @@ public class ExamMgmtPanel extends JPanel {
         disableCol.setCellRenderer(new ButtonRenderer());
         targetCol.setCellRenderer(new ButtonRenderer());
 
-        modifyCol.setCellEditor(new ButtonEditor(new JCheckBox(), "수정"));
-        disableCol.setCellEditor(new ButtonEditor(new JCheckBox(), "비활성화"));
-        targetCol.setCellEditor(new ButtonEditor(new JCheckBox(), "응시 대상"));
+        modifyCol.setCellEditor(new ButtonEditor(new JCheckBox(), "수정", exams));
+        disableCol.setCellEditor(new ButtonEditor(new JCheckBox(), "비활성화", exams));
+        targetCol.setCellEditor(new ButtonEditor(new JCheckBox(), "응시 대상", exams));
 
         panel.add(new JScrollPane(table), BorderLayout.CENTER);
         return panel;
     }
 
-    // 렌더러 공통
     static class ButtonRenderer extends JButton implements TableCellRenderer {
         public ButtonRenderer() {
             setOpaque(true);
@@ -130,17 +143,18 @@ public class ExamMgmtPanel extends JPanel {
         }
     }
 
-    // 에디터 공통
     class ButtonEditor extends DefaultCellEditor {
         private final JButton button = new JButton();
         private String label;
         private boolean clicked;
         private final String actionType;
         private int row;
+        private final List<Exam> examList;
 
-        public ButtonEditor(JCheckBox checkBox, String actionType) {
+        public ButtonEditor(JCheckBox checkBox, String actionType, List<Exam> examList) {
             super(checkBox);
             this.actionType = actionType;
+            this.examList = examList;
             button.setOpaque(true);
             button.addActionListener(e -> fireEditingStopped());
         }
@@ -156,7 +170,7 @@ public class ExamMgmtPanel extends JPanel {
 
         public Object getCellEditorValue() {
             if (clicked) {
-                Exam exam = allExams.get(row);
+                Exam exam = examList.get(row);
                 switch (actionType) {
                     case "수정" -> {
                         LocalDateTime now = LocalDateTime.now();
@@ -171,11 +185,34 @@ public class ExamMgmtPanel extends JPanel {
 
                         ExamCreationContext context = new ExamCreationContext();
                         context.setExam(exam);
+                        try {
+                            // ✅ 기존 문제 불러오기
+                            List<QuestionFull> questions = examService.getQuestionsByExamId(exam.getExamId());
+                            context.setQuestions(questions);
+
+                            // ✅ 기존 응시 대상(학과 및 학년) 불러오기
+                            List<int[]> deptAndGrade = examService.getAssignedDepartmentAndGradeIds(exam.getExamId());
+                            List<Integer> dpmtIds = new ArrayList<>();
+                            List<Integer> grades = new ArrayList<>();
+                            for (int[] pair : deptAndGrade) {
+                                dpmtIds.add(pair[0]);
+                                grades.add(pair[1]);
+                            }
+                            context.setTargetDepartments(dpmtIds);
+                            context.setTargetGrades(grades);
+
+                        } catch (ServiceException ex) {
+                            JOptionPane.showMessageDialog(button, "기존 시험 데이터 불러오기 실패:\n" + ex.getMessage());
+                        }
 
                         JFrame frame = new JFrame("시험 수정");
                         ExamEditorPanel editorPanel = new ExamEditorPanel(
                                 context,
                                 () -> frame.dispose(),
+                                () -> {
+                                    frame.dispose();
+                                    refreshExamList();
+                                },
                                 frame
                         );
                         frame.setContentPane(editorPanel);
@@ -198,8 +235,9 @@ public class ExamMgmtPanel extends JPanel {
 
                         if (confirm == JOptionPane.YES_OPTION) {
                             try {
-                                examService.disableExam(exam.getExamId()); // 실제 DB 상태 변경
+                                examService.disableExam(exam.getExamId());
                                 JOptionPane.showMessageDialog(button, "시험이 비활성화되었습니다.");
+                                refreshExamList();
                             } catch (ServiceException ex) {
                                 JOptionPane.showMessageDialog(button, "비활성화 중 오류 발생: " + ex.getMessage(), "오류", JOptionPane.ERROR_MESSAGE);
                             }

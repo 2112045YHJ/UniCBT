@@ -2,6 +2,7 @@ package main.java.dao;
 
 import main.java.model.ExamsDepartment;
 import java.util.List;
+import java.util.Map;
 
 public interface ExamsDepartmentDao {
     /**
@@ -23,4 +24,6 @@ public interface ExamsDepartmentDao {
      * examId에 해당하는 모든 매핑 삭제 (시험 삭제 시 연동)
      */
     void deleteByExamId(int examId) throws DaoException;
-}
+    Map<Integer, List<Integer>> findDepartmentAndGradesGrouped(int examId) throws DaoException;
+
+    }

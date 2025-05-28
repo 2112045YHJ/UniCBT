@@ -11,6 +11,11 @@ public class ExamResult {
 
     public ExamResult() {
     }
+    public ExamResult(int userId, int examId, int score) {
+        this.userId = userId;
+        this.examId = examId;
+        this.score = score;
+    }
 
     public int getResultId() {
         return resultId;

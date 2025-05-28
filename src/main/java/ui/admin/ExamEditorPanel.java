@@ -20,11 +20,13 @@ public class ExamEditorPanel extends JPanel {
 
     private final ExamCreationContext context;
     private final Runnable onBack;
+    private final Runnable onSaved;
     private final JFrame parentFrame;
 
-    public ExamEditorPanel(ExamCreationContext context, Runnable onBack, JFrame parentFrame) {
+    public ExamEditorPanel(ExamCreationContext context, Runnable onBack, Runnable onSaved, JFrame parentFrame) {
         this.context = context;
         this.onBack = onBack;
+        this.onSaved = onSaved;
         this.parentFrame = parentFrame;
 
         setLayout(new BorderLayout());
@@ -83,12 +85,15 @@ public class ExamEditorPanel extends JPanel {
                 // 👉 다음 단계로 실제 이동: QuestionEditorPanel로 전환
                 parentFrame.setContentPane(new QuestionEditorPanel(
                         context,
-                        () -> parentFrame.setContentPane(new ExamEditorPanel(context, onBack, parentFrame)),
+                        () -> parentFrame.setContentPane(new ExamEditorPanel(context, onBack, onSaved, parentFrame)),
                         () -> {
-                            // 다음 단계 예비 작업
-                            System.out.println("응시 대상 선택 화면으로 이동 예정");
-                        }
+                            parentFrame.dispose();   // 시험 추가 창 닫기
+                            onSaved.run();           // 시험 목록 새로고침
+                        },
+                        parentFrame                   // ✅ 네 번째 인자로 프레임 전달
                 ));
+                parentFrame.revalidate();
+                parentFrame.repaint();
                 parentFrame.revalidate();
                 parentFrame.repaint();
             }

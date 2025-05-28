@@ -255,7 +255,19 @@ public class ExamTakingPanel extends JPanel {
 
         try {
             submissionService.submitAnswerBatch(user.getUserId(), examId, selectedAnswers);
-            JOptionPane.showMessageDialog(this, "시험이 완료되었습니다.");
+            JOptionPane.showMessageDialog(this, "시험이 완료되었습니다.", "완료", JOptionPane.INFORMATION_MESSAGE);
+            countdownTimer.stop();
+
+            // 화면 복귀
+            SwingUtilities.invokeLater(() -> {
+                JFrame frame = (JFrame) SwingUtilities.getWindowAncestor(this);
+                if (frame instanceof ClientMainFrame) {
+                    // 현재 프레임 종료
+                    frame.dispose();
+                    // 새 MainFrame을 새로 생성해서 항상 최신 화면으로 복귀
+                    new ClientMainFrame(user).setVisible(true);
+                }
+            });
         } catch (ServiceException | DaoException ex) {
             JOptionPane.showMessageDialog(this,
                     "제출 중 오류가 발생했습니다:\n" + ex.getMessage(),

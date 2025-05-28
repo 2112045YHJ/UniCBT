@@ -112,6 +112,47 @@ public class ExamDaoImpl implements ExamDao {
             throw new DaoException("updateQuestionCount 실패", e);
         }
     }
+    @Override
+    public List<int[]> getAssignedDepartmentAndGradeIds(int examId) throws DaoException {
+        String sql = "SELECT dpmt_id, grade FROM examsdepartment WHERE exam_id = ?";
+        List<int[]> result = new ArrayList<>();
+
+        try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setInt(1, examId);
+            try (ResultSet rs = pstmt.executeQuery()) {
+                while (rs.next()) {
+                    int[] pair = new int[2];
+                    pair[0] = rs.getInt("dpmt_id");
+                    pair[1] = rs.getInt("grade");
+                    result.add(pair);
+                }
+            }
+        } catch (SQLException e) {
+            throw new DaoException("examsdepartment 조회 실패", e);
+        }
+
+        return result;
+    }
+    @Override
+    public void update(Exam exam) throws DaoException {
+        String sql = """
+        UPDATE exams
+           SET subject = ?, start_date = ?, end_date = ?, duration_minutes = ?, question_cnt = ?
+         WHERE exam_id = ?
+    """;
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, exam.getSubject());
+            ps.setTimestamp(2, Timestamp.valueOf(exam.getStartDate()));
+            ps.setTimestamp(3, Timestamp.valueOf(exam.getEndDate()));
+            ps.setInt(4, exam.getDurationMinutes());
+            ps.setInt(5, exam.getQuestionCnt());
+            ps.setInt(6, exam.getExamId());
+            ps.executeUpdate();
+        } catch (SQLException e) {
+            throw new DaoException("update 실패: " + exam.getExamId(), e);
+        }
+    }
+
     public List<Exam> findAllByDpmtAndGrade(int dpmtId, int grade) throws DaoException {
         String sql = "SELECT e.* " +
                 "FROM exams e " +

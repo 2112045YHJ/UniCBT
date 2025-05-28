@@ -10,4 +10,6 @@ public interface UserDao {
     void insert(User user) throws DaoException;
     void update(User user) throws DaoException;
     void delete(int userId) throws DaoException;
+
+    List<User> findByDpmtAndGrade(int dpmtId, int grade) throws DaoException;
 }

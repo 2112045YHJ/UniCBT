@@ -30,8 +30,9 @@ public interface ExamDao {
     void updateQuestionCount(int examId, int questionCnt) throws DaoException;
     List<Exam> findAllByDpmtAndGrade(int dpmtId, int grade) throws DaoException;
     List<Exam> findAllByUser(int userId) throws DaoException;
-
+    void update(Exam exam) throws DaoException;
     void disableExam(int examId) throws DaoException;
+    List<int[]> getAssignedDepartmentAndGradeIds(int examId) throws DaoException;
 
     List<String> findAssignedDepartmentsAndGrades(int examId) throws DaoException;
 }
