@@ -7,6 +7,7 @@ import java.util.List;
 
 public class ExamCreationContext {
 
+    private boolean updateMode = false;
     private Exam exam;
     private List<QuestionFull> questions;
 
@@ -45,5 +46,12 @@ public class ExamCreationContext {
 
     public void setTargetDepartments(List<Integer> targetDepartments) {
         this.targetDepartments = targetDepartments;
+    }
+    public boolean isUpdateMode() {
+        return updateMode;
+    }
+
+    public void setUpdateMode(boolean updateMode) {
+        this.updateMode = updateMode;
     }
 }
