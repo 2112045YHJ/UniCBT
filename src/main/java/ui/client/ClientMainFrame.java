@@ -29,16 +29,15 @@ public class ClientMainFrame extends BaseFrame {
      */
     private void initScreens() {
 //        addScreen("Notice", new NoticePanel(user));
-//        addScreen("Survey", new SurveyPanel(user));
+        addScreen("Survey", new SurveyPanel(user, this));
         addScreen("Exam", new ExamListPanel(user));
         addScreen("Result", new ResultListPanel(user));
     }
 
-    public static void main(String[] args) {
-        SwingUtilities.invokeLater(() -> {
-            // 테스트용 더미 사용자
-            User dummy = new User(1, 1, "홍길동", "2023001", 101, 3, true);
-            new ClientMainFrame(dummy).setVisible(true);
-        });
+    public void switchToResultsPanel() {
+        if (cardLayout != null && contentPanel != null) {
+            cardLayout.show(contentPanel, "Result"); // "Result"는 ResultListPanel의 키
+        }
     }
+
 }

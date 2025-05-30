@@ -1,38 +1,24 @@
 package main.java.dao;
 
 import main.java.model.Exam;
+import java.sql.Connection; // Connection import 추가
 import java.util.List;
 
-/**
- * 시험 관련 데이터 접근 인터페이스
- */
 public interface ExamDao {
-    /** ID로 단일 시험 조회 */
-    Exam findById(int examId) throws DaoException;
+    Exam findById(int examId, Connection conn) throws DaoException; // conn 파라미터 추가
+    List<Exam> findAll(Connection conn) throws DaoException; // conn 파라미터 추가
+    List<Exam> findOpenExams(Connection conn) throws DaoException; // conn 파라미터 추가
 
-    /** 모든 시험 조회 */
-    List<Exam> findAll() throws DaoException;
+    // insert 메서드는 exam 객체에 생성된 ID를 설정해야 함
+    void insert(Exam exam, Connection conn) throws DaoException; // conn 파라미터 추가
+    void update(Exam exam, Connection conn) throws DaoException; // conn 파라미터 추가
+    void updateQuestionCount(int examId, int questionCnt, Connection conn) throws DaoException; // conn 파라미터 추가
 
-    /** 열려 있는(OPEN) 시험 목록 조회 */
-    List<Exam> findOpenExams() throws DaoException;
+    void disableExam(int examId, Connection conn) throws DaoException; // conn 파라미터 추가
 
-    /**
-     * 새 Exam을 저장하고, 생성된 PK를 exam.examId에 설정한다.
-     * @param exam 저장할 Exam 객체(subject, startDate, endDate, durationMinutes, questionCnt)
-     */
-    void insert(Exam exam) throws DaoException;
-
-    /**
-     * 문제 개수(question_cnt)를 갱신한다.
-     * @param examId       갱신할 시험 ID
-     * @param questionCnt  해당 시험의 문제 개수
-     */
-    void updateQuestionCount(int examId, int questionCnt) throws DaoException;
-    List<Exam> findAllByDpmtAndGrade(int dpmtId, int grade) throws DaoException;
-    List<Exam> findAllByUser(int userId) throws DaoException;
-    void update(Exam exam) throws DaoException;
-    void disableExam(int examId) throws DaoException;
-    List<int[]> getAssignedDepartmentAndGradeIds(int examId) throws DaoException;
-
-    List<String> findAssignedDepartmentsAndGrades(int examId) throws DaoException;
+    // Connection을 받는 다른 메서드 시그니처도 필요에 따라 추가 (예: findAllByDpmtAndGrade, findAllByUser 등)
+    List<Exam> findAllByDpmtAndGrade(int dpmtId, int grade, Connection conn) throws DaoException;
+    List<Exam> findAllByUser(int userId, Connection conn) throws DaoException;
+    List<int[]> getAssignedDepartmentAndGradeIds(int examId, Connection conn) throws DaoException;
+    List<String> findAssignedDepartmentsAndGrades(int examId, Connection conn) throws DaoException;
 }

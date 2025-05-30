@@ -7,6 +7,7 @@ import javax.swing.*;
 import java.awt.*;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.util.Calendar;
 import java.util.Date;
 
 public class ExamEditorPanel extends JPanel {
@@ -105,12 +106,40 @@ public class ExamEditorPanel extends JPanel {
     }
 
     private void loadExamIfEditing() {
-        Exam exam = context.getExam();
+        Exam exam = context.getExam(); // 생성자에서 받은 context 사용
         if (exam != null) {
             subjectField.setText(exam.getSubject());
-            durationSpinner.setValue(exam.getDurationMinutes());
-            startDateSpinner.setValue(java.sql.Timestamp.valueOf(exam.getStartDate()));
-            endDateSpinner.setValue(java.sql.Timestamp.valueOf(exam.getEndDate()));
+            if (exam.getDurationMinutes() > 0) { // 유효한 값일 때만 설정
+                durationSpinner.setValue(exam.getDurationMinutes());
+            } else {
+                durationSpinner.setValue(60); // 기본값 예시
+            }
+
+            // startDate 처리
+            if (exam.getStartDate() != null) {
+                startDateSpinner.setValue(java.sql.Timestamp.valueOf(exam.getStartDate()));
+            } else {
+                startDateSpinner.setValue(new java.util.Date()); // 현재 시간으로 기본값 설정
+            }
+
+            // endDate 처리
+            if (exam.getEndDate() != null) {
+                endDateSpinner.setValue(java.sql.Timestamp.valueOf(exam.getEndDate()));
+            } else {
+                // 현재 시간 + 1일로 기본값 설정 예시
+                Calendar cal = Calendar.getInstance();
+                cal.add(Calendar.DAY_OF_MONTH, 1);
+                endDateSpinner.setValue(cal.getTime());
+            }
+        } else {
+            // exam 객체가 null인 경우 (예: 새 시험 등록 시 아직 Exam 객체가 컨텍스트에 설정되기 전)
+            // 스피너 기본값 설정
+            startDateSpinner.setValue(new java.util.Date());
+            Calendar cal = Calendar.getInstance();
+            cal.setTime(new java.util.Date());
+            cal.add(Calendar.DAY_OF_MONTH, 7); // 예: 마감일 기본값은 7일 후
+            endDateSpinner.setValue(cal.getTime());
+            durationSpinner.setValue(60); // 기본 제한시간
         }
     }
 

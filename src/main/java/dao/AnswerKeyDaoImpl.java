@@ -1,66 +1,88 @@
 package main.java.dao;
 
 import main.java.model.AnswerKey;
-import main.java.util.DBConnection;
+// import main.java.util.DBConnection; // 직접 사용하지 않도록 변경
 
 import java.sql.*;
 
 public class AnswerKeyDaoImpl implements AnswerKeyDao {
-    private final Connection conn = DBConnection.getConnection();
 
     @Override
-    public AnswerKey findByQuestionId(int questionId) throws DaoException {
+    public AnswerKey findByQuestionId(int questionId, Connection conn) throws DaoException {
         String sql = "SELECT * FROM answer_key WHERE question_id = ?";
-        try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+        try (PreparedStatement pstmt = conn.prepareStatement(sql)) { // 전달받은 conn 사용
             pstmt.setInt(1, questionId);
             ResultSet rs = pstmt.executeQuery();
             if (rs.next()) {
+                String correctLabelStr = rs.getString("correct_label");
+                Character correctLabel = (correctLabelStr != null && !correctLabelStr.isEmpty()) ? correctLabelStr.charAt(0) : null;
                 return new AnswerKey(
                         rs.getInt("question_id"),
-                        rs.getString("correct_label") != null ? rs.getString("correct_label").charAt(0) : null,
+                        correctLabel,
                         rs.getString("correct_text")
                 );
             }
             return null;
         } catch (SQLException e) {
-            throw new DaoException("Error finding AnswerKey by questionId", e);
+            throw new DaoException("Error finding AnswerKey by questionId: " + questionId, e);
         }
     }
 
     @Override
-    public void insert(AnswerKey key) throws DaoException {
+    public void insert(AnswerKey key, Connection conn) throws DaoException {
         String sql = "INSERT INTO answer_key(question_id, correct_label, correct_text) VALUES (?, ?, ?)";
-        try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+        try (PreparedStatement pstmt = conn.prepareStatement(sql)) { // 전달받은 conn 사용
             pstmt.setInt(1, key.getQuestionId());
-            if (key.getCorrectLabel() != null) pstmt.setString(2, key.getCorrectLabel().toString()); else pstmt.setNull(2, Types.CHAR);
-            if (key.getCorrectText() != null) pstmt.setString(3, key.getCorrectText()); else pstmt.setNull(3, Types.VARCHAR);
+            if (key.getCorrectLabel() != null) {
+                pstmt.setString(2, key.getCorrectLabel().toString());
+            } else {
+                pstmt.setNull(2, Types.CHAR);
+            }
+            if (key.getCorrectText() != null) {
+                pstmt.setString(3, key.getCorrectText());
+            } else {
+                pstmt.setNull(3, Types.VARCHAR);
+            }
             pstmt.executeUpdate();
         } catch (SQLException e) {
-            throw new DaoException("Error inserting AnswerKey", e);
+            throw new DaoException("Error inserting AnswerKey for questionId: " + key.getQuestionId(), e);
         }
     }
 
     @Override
-    public void update(AnswerKey key) throws DaoException {
+    public void update(AnswerKey key, Connection conn) throws DaoException {
         String sql = "UPDATE answer_key SET correct_label = ?, correct_text = ? WHERE question_id = ?";
-        try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
-            if (key.getCorrectLabel() != null) pstmt.setString(1, key.getCorrectLabel().toString()); else pstmt.setNull(1, Types.CHAR);
-            if (key.getCorrectText() != null) pstmt.setString(2, key.getCorrectText()); else pstmt.setNull(2, Types.VARCHAR);
+        try (PreparedStatement pstmt = conn.prepareStatement(sql)) { // 전달받은 conn 사용
+            if (key.getCorrectLabel() != null) {
+                pstmt.setString(1, key.getCorrectLabel().toString());
+            } else {
+                pstmt.setNull(1, Types.CHAR);
+            }
+            if (key.getCorrectText() != null) {
+                pstmt.setString(2, key.getCorrectText());
+            } else {
+                pstmt.setNull(2, Types.VARCHAR);
+            }
             pstmt.setInt(3, key.getQuestionId());
-            pstmt.executeUpdate();
+            int affectedRows = pstmt.executeUpdate();
+            if (affectedRows == 0) {
+                // 필요시 예외 발생 또는 로깅. insertOrUpdate 패턴이 아니라면 업데이트 대상이 없을 수 있음.
+                // 여기서는 insert 후 update가 호출될 일은 ExamServiceImpl 로직상 없으므로,
+                // 만약 호출된다면 해당 questionId가 없는 경우일 수 있음.
+            }
         } catch (SQLException e) {
-            throw new DaoException("Error updating AnswerKey", e);
+            throw new DaoException("Error updating AnswerKey for questionId: " + key.getQuestionId(), e);
         }
     }
 
     @Override
-    public void deleteByQuestionId(int questionId) throws DaoException {
+    public void deleteByQuestionId(int questionId, Connection conn) throws DaoException {
         String sql = "DELETE FROM answer_key WHERE question_id = ?";
-        try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+        try (PreparedStatement pstmt = conn.prepareStatement(sql)) { // 전달받은 conn 사용
             pstmt.setInt(1, questionId);
             pstmt.executeUpdate();
         } catch (SQLException e) {
-            throw new DaoException("Error deleting AnswerKey by questionId", e);
+            throw new DaoException("Error deleting AnswerKey by questionId: " + questionId, e);
         }
     }
 }

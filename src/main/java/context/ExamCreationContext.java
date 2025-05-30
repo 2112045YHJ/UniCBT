@@ -1,3 +1,4 @@
+// ExamCreationContext.java
 package main.java.context;
 
 import main.java.model.Exam;
@@ -10,10 +11,18 @@ public class ExamCreationContext {
     private boolean updateMode = false;
     private Exam exam;
     private List<QuestionFull> questions;
-
-    // ✅ 추가: 응시 대상 학년 및 학과 ID 목록
     private List<Integer> targetGrades;
     private List<Integer> targetDepartments;
+    private int originalExamIdToClearAssignments = 0; // 이전 시험 ID를 저장할 필드
+
+    // --- 기존 getter/setter ---
+    public boolean isUpdateMode() {
+        return updateMode;
+    }
+
+    public void setUpdateMode(boolean updateMode) {
+        this.updateMode = updateMode;
+    }
 
     public Exam getExam() {
         return exam;
@@ -31,7 +40,6 @@ public class ExamCreationContext {
         this.questions = questions;
     }
 
-    // ✅ 추가 Getter/Setter
     public List<Integer> getTargetGrades() {
         return targetGrades;
     }
@@ -47,11 +55,13 @@ public class ExamCreationContext {
     public void setTargetDepartments(List<Integer> targetDepartments) {
         this.targetDepartments = targetDepartments;
     }
-    public boolean isUpdateMode() {
-        return updateMode;
+
+    // --- 새 getter/setter ---
+    public int getOriginalExamIdToClearAssignments() {
+        return originalExamIdToClearAssignments;
     }
 
-    public void setUpdateMode(boolean updateMode) {
-        this.updateMode = updateMode;
+    public void setOriginalExamIdToClearAssignments(int originalExamIdToClearAssignments) {
+        this.originalExamIdToClearAssignments = originalExamIdToClearAssignments;
     }
 }

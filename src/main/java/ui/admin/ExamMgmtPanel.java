@@ -267,12 +267,12 @@ public class ExamMgmtPanel extends JPanel {
                 return;
             }
 
-
             // Case 1: 시험 시작 전 (now < start_date)
             if (now.isBefore(currentExamState.getStartDate())) {
                 launchExamEditorForUpdate(currentExamState);
             }
             // Case 2: 시험 기간 종료 후 (now > end_date)
+            // currentExamState.getEndDate()는 DB에서 가져온 실제 마감일입니다.
             else if (now.isAfter(currentExamState.getEndDate())) {
                 JOptionPane.showMessageDialog(button, "종료된 시험은 수정할 수 없습니다.", "수정 불가", JOptionPane.WARNING_MESSAGE);
             }
@@ -280,32 +280,46 @@ public class ExamMgmtPanel extends JPanel {
             else {
                 int confirm = JOptionPane.showConfirmDialog(button,
                         "현재 진행 중인 시험입니다. 수정하시겠습니까?\n" +
-                                "수정을 진행하면 현재 시험은 즉시 비활성화 처리되고,\n" +
+                                "수정을 진행하면 현재 시험은 제목에 '(수정전 버전)'이 추가되며 즉시 비활성화 처리되고,\n" +
                                 "수정된 내용은 새로운 시험으로 생성됩니다.\n" +
                                 "(기존 응시 결과는 보존되며, 학생들은 새 시험에 대한 응시 자격을 갖게 됩니다.)",
                         "시험 수정 확인", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
 
                 if (confirm == JOptionPane.YES_OPTION) {
                     try {
-                        // 1. 현재 시험(E1) 비활성화
-                        examService.disableExam(currentExamState.getExamId());
-                        originalExamIdToClearAssignments = currentExamState.getExamId(); // 이전 시험 ID 저장
+                        // 1. 현재 시험(E1)의 제목을 변경하고 비활성화
+                        String originalSubject = currentExamState.getSubject();
+                        String archivedSubject = originalSubject + " (수정전 버전)";
+                        examService.deactivateAndRenameExam(currentExamState.getExamId(), archivedSubject);
 
                         // 2. 새 시험(E2) 생성을 위한 컨텍스트 준비 (E1 정보 템플릿으로 사용)
                         ExamCreationContext newExamContext = new ExamCreationContext();
                         newExamContext.setUpdateMode(false); // 새 시험 생성 모드
+                        newExamContext.setOriginalExamIdToClearAssignments(currentExamState.getExamId()); // 이전 시험 ID 컨텍스트에 설정
 
                         Exam templateExam = new Exam(); // ID가 없는 새 Exam 객체
-                        templateExam.setSubject(currentExamState.getSubject());
+                        templateExam.setSubject(originalSubject); // 새 시험(E2)은 원래 제목으로 시작
                         templateExam.setDurationMinutes(currentExamState.getDurationMinutes());
-                        // 시작일, 종료일 등은 ExamEditorPanel에서 새로 설정하도록 유도 (또는 현재값으로 기본 제공)
-                        // templateExam.setStartDate(currentExamState.getStartDate());
-                        // templateExam.setEndDate(currentExamState.getEndDate());
+
+                        // templateExam의 startDate와 endDate를 null이 아닌 값으로 초기화
+                        if (currentExamState.getStartDate() != null) {
+                            templateExam.setStartDate(currentExamState.getStartDate());
+                        } else {
+                            templateExam.setStartDate(LocalDateTime.now());
+                        }
+                        // 새 시험의 종료일은 기존 시험의 종료일을 따르거나 새로 설정할 수 있도록 유도
+                        // 여기서는 기존 시험의 종료일을 기본값으로 설정
+                        if (currentExamState.getEndDate() != null && currentExamState.getEndDate().isAfter(LocalDateTime.now())) {
+                            templateExam.setEndDate(currentExamState.getEndDate());
+                        } else {
+                            templateExam.setEndDate(LocalDateTime.now().plusDays(7)); // 예: 7일 후로 기본 설정
+                        }
+
                         newExamContext.setExam(templateExam);
 
                         // E1의 문제들 로드
                         List<QuestionFull> questions = examService.getQuestionsByExamId(currentExamState.getExamId());
-                        newExamContext.setQuestions(new ArrayList<>(questions)); // 깊은 복사 고려
+                        newExamContext.setQuestions(new ArrayList<>(questions));
 
                         // E1의 응시 대상(학과/학년 ID) 로드
                         List<int[]> deptAndGradeIds = examService.getAssignedDepartmentAndGradeIds(currentExamState.getExamId());
@@ -319,24 +333,14 @@ public class ExamMgmtPanel extends JPanel {
                         newExamContext.setTargetGrades(grades);
 
                         // 3. 새 시험(E2) 편집/생성 UI 실행
-                        JFrame frame = new JFrame("새 시험으로 수정 (기존: " + currentExamState.getSubject() + ")");
+                        JFrame frame = new JFrame("새 시험으로 수정 (원본: " + originalSubject + ")");
                         ExamEditorPanel editorPanel = new ExamEditorPanel(
                                 newExamContext,
-                                () -> frame.dispose(), // 이전 (취소)
-                                () -> { // 저장 성공 후 콜백 (TargetSelectionDialog에서 호출됨)
-                                    try {
-                                        // E2 저장 및 배정은 newExamContext를 사용하는 ExamServiceImpl.saveExamWithDetails 에서 처리됨.
-                                        // 이제 E1의 학생 배정 정보 삭제
-                                        if (originalExamIdToClearAssignments > 0) {
-                                            examAssignmentDao.removeAssignments(originalExamIdToClearAssignments);
-                                            originalExamIdToClearAssignments = 0; // 처리 후 초기화
-                                        }
-                                        frame.dispose();
-                                        parentPanel.refreshExamList();
-                                        JOptionPane.showMessageDialog(parentPanel, "시험이 새 버전으로 수정 및 등록되었습니다.", "수정 완료", JOptionPane.INFORMATION_MESSAGE);
-                                    } catch (DaoException ex) {
-                                        JOptionPane.showMessageDialog(frame, "수정된 시험 처리 중 오류 발생 (학생 배정 해제 실패):\n" + ex.getMessage(), "오류", JOptionPane.ERROR_MESSAGE);
-                                    }
+                                () -> frame.dispose(),
+                                () -> {
+                                    frame.dispose();
+                                    parentPanel.refreshExamList(); // ExamServiceImpl에서 E1의 배정 삭제 후 목록 새로고침
+                                    JOptionPane.showMessageDialog(parentPanel, "시험이 새 버전으로 수정 및 등록되었으며, 이전 버전은 비활성화 및 이름 변경 처리되었습니다.", "수정 완료", JOptionPane.INFORMATION_MESSAGE);
                                 },
                                 frame
                         );
