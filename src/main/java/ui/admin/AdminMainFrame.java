@@ -29,7 +29,7 @@ public class AdminMainFrame extends BaseFrame {
 
     private void initScreens() {
         addScreen("Profile", new ProfilePanel(user));
-        // addScreen("StudentMgmt", new StudentMgmtPanel(user, this));
+        addScreen("StudentMgmt", new StudentMgmtPanel(user, this));
         addScreen("ExamMgmt", new ExamMgmtPanel());
         addScreen("ExamProgress", new ExamProgressPanel(user, this));
         addScreen("Stats", new ExamStatsPanel(user, this));
@@ -38,6 +38,8 @@ public class AdminMainFrame extends BaseFrame {
     }
     public void showSurveyResultsViewerScreen(int surveyId, String surveyTitle) {
         String viewerScreenKey = "SurveyResultsViewer_" + surveyId;
+
+
         SurveyResultsViewerPanel viewerPanel = new SurveyResultsViewerPanel(this.user, surveyId, surveyTitle, this);
         contentPanel.add(viewerPanel, viewerScreenKey);
         cardLayout.show(contentPanel, viewerScreenKey);
@@ -68,11 +70,8 @@ public class AdminMainFrame extends BaseFrame {
 
         // JOptionPane.showMessageDialog(this, "선택된 시험: " + examSubject + " (ID: " + examId + ")\n상세 통계 화면으로 이동합니다.");
     }
+
     public static void main(String[] args) {
-        SwingUtilities.invokeLater(() -> {
-            // 테스트용 더미 관리자 사용자
-            User dummy = new User(0, 0, "관리자", "admin", 0, 0, true);
-            new AdminMainFrame(dummy).setVisible(true);
-        });
+
     }
 }
