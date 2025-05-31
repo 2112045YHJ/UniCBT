@@ -34,7 +34,7 @@ public class AdminMainFrame extends BaseFrame {
         addScreen("ExamProgress", new ExamProgressPanel(user, this));
         addScreen("Stats", new ExamStatsPanel(user, this));
         addScreen("SurveyMgmt", new SurveyMgmtPanel(user, this)); // SurveyMgmtPanel 추가
-        // addScreen("NoticeMgmt", new NoticeMgmtPanel(user, this));
+        addScreen("NoticeMgmt", new NoticeMgmtPanel(user, this));
     }
     public void showSurveyResultsViewerScreen(int surveyId, String surveyTitle) {
         String viewerScreenKey = "SurveyResultsViewer_" + surveyId;

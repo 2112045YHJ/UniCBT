@@ -28,7 +28,7 @@ public class ClientMainFrame extends BaseFrame {
      * BaseFrame의 contentPanel에 각 화면을 등록
      */
     private void initScreens() {
-//        addScreen("Notice", new NoticePanel(user));
+        addScreen("Notice", new NoticePanel(user, this));
         addScreen("Survey", new SurveyPanel(user, this));
         addScreen("Exam", new ExamListPanel(user));
         addScreen("Result", new ResultListPanel(user));

@@ -98,7 +98,7 @@ public class Announcement {
 
     @Override
     public String toString() {
-        return "Announcement{" +
+        return "announcements{" +
                 "announcementId=" + announcementId +
                 ", title='" + title + '\'' +
                 ", content='" + content + '\'' +
