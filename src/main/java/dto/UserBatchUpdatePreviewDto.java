@@ -33,7 +33,7 @@ public class UserBatchUpdatePreviewDto {
         UserDto excelData = this.userInfoFromExcel;
         StringBuilder errors = new StringBuilder();
 
-        // 1. 필수 필드 유효성 검사
+        // 1. 필수 필드 유효성 검사 (요구사항: 빈 데이터 학생들도 불러오기)
         if (excelData.getName() == null || excelData.getName().isEmpty()) {
             errors.append("이름 누락; ");
         }
@@ -41,8 +41,8 @@ public class UserBatchUpdatePreviewDto {
             errors.append("생년월일 누락/형식오류; ");
         }
 
-        // 2. 학과 데이터 유효성 검사 (Service에서 dpmtId 변환 후 판단)
-        // UserServiceImpl.previewExcelStudentUpdates에서 학과명을 ID로 변환 실패 시 dpmtId를 0으로 설정
+        // 2. 학과 데이터 유효성 검사 (요구사항: 학과 데이터가 안 맞으면 체크박스 해제)
+        // UserServiceImpl.previewExcelStudentUpdates에서 학과명을 ID로 변환 실패 시 dpmtId를 0으로 설정하는 로직 활용
         if (excelData.getDpmtId() == 0 && excelData.getDepartmentName() != null && !excelData.getDepartmentName().isEmpty()) {
             errors.append("일치하는 학과 없음(").append(excelData.getDepartmentName()).append("); ");
         }
@@ -85,4 +85,7 @@ public class UserBatchUpdatePreviewDto {
     public void setNewUser(boolean newUser) { isNewUser = newUser; }
     public boolean isSelectedForUpdate() { return selectedForUpdate; }
     public void setSelectedForUpdate(boolean selectedForUpdate) { this.selectedForUpdate = selectedForUpdate; }
+    public String getValidationMessage() {
+        return validationMessage;
+    }
 }

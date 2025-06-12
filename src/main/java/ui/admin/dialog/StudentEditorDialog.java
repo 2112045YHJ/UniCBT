@@ -18,6 +18,7 @@ import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 import java.util.Vector; // JComboBox 모델용
+import java.util.function.Consumer;
 
 /**
  * 학생 정보를 추가하거나 수정하기 위한 JDialog 입니다.
@@ -28,6 +29,9 @@ public class StudentEditorDialog extends JDialog {
     private final DepartmentService departmentService = new DepartmentServiceImpl();
     private final UserDto studentToEdit; // 수정 대상 학생 정보 (신규 등록 시 null)
     private final Runnable onSaveSuccessCallback; // 저장 성공 시 호출될 콜백
+    private final Consumer<UserDto> onUpdateCallback; // 미리보기 수정용 콜백
+
+    private boolean isPreviewMode = false;
 
     // UI 컴포넌트
     private JTextField studentNumberField;
@@ -51,6 +55,7 @@ public class StudentEditorDialog extends JDialog {
         this.userService = userService;
         this.studentToEdit = studentToEdit;
         this.onSaveSuccessCallback = onSaveSuccessCallback;
+        this.onUpdateCallback = null;
 
         setSize(480, 420); // 다이얼로그 크기 조정
         setResizable(false); // 크기 조절 불가
@@ -68,6 +73,26 @@ public class StudentEditorDialog extends JDialog {
             studentNumberField.setEditable(true); // 새 학생 등록 시 학번 입력 가능
             statusComboBox.setSelectedItem("재학"); // 신규 등록 시 기본 상태 "재학"
         }
+    }
+
+    public StudentEditorDialog(Dialog owner, UserDto studentToEdit, Consumer<UserDto> onUpdateCallback) {
+        super(owner, "미리보기 정보 수정: " + studentToEdit.getName(), true);
+        this.userService = null; // 미리보기 모드에서는 DB 서비스 직접 사용 안 함
+        this.studentToEdit = studentToEdit;
+        this.onSaveSuccessCallback = null;
+        this.onUpdateCallback = onUpdateCallback; // 콜백 저장
+        this.isPreviewMode = true; // 미리보기 모드 활성화
+
+        setSize(480, 420);
+        setResizable(false);
+        setLocationRelativeTo(owner);
+        setLayout(new BorderLayout(10, 10));
+        ((JPanel) getContentPane()).setBorder(BorderFactory.createEmptyBorder(15, 20, 15, 20));
+
+        initComponents(); // UI 초기화는 공통 로직 사용
+        populateFieldsForEdit(); // 전달받은 DTO로 필드 채우기
+        // 학번은 미리보기에서도 수정하지 않는 것을 원칙으로 함
+        studentNumberField.setEditable(false);
     }
 
     /**
@@ -241,6 +266,7 @@ public class StudentEditorDialog extends JDialog {
      * UI 필드에서 입력된 정보로 UserDto를 생성하고, UserService를 통해 저장/수정합니다.
      */
     private void saveStudent() {
+        // ... (유효성 검사 로직 - 이전과 동일)
         String studentNumber = studentNumberField.getText().trim();
         String name = nameField.getText().trim();
         Date birthDateUtil = (Date) birthDateSpinner.getValue();
@@ -248,55 +274,50 @@ public class StudentEditorDialog extends JDialog {
         String selectedGradeStr = (String) gradeComboBox.getSelectedItem();
         String selectedStatus = (String) statusComboBox.getSelectedItem();
 
-        // 유효성 검사
-        if (studentNumber.isEmpty()) {
-            JOptionPane.showMessageDialog(this, "학번을 입력해주세요.", "입력 오류", JOptionPane.WARNING_MESSAGE);
-            studentNumberField.requestFocus(); return;
+        if (studentNumber.isEmpty() || name.isEmpty() || birthDateUtil == null || (selectedDeptItem == null || selectedDeptItem.getId() == 0)) {
+            JOptionPane.showMessageDialog(this, "학번, 이름, 생년월일, 학과는 필수 입력 항목입니다.", "입력 오류", JOptionPane.WARNING_MESSAGE);
+            return;
         }
-        if (name.isEmpty()) {
-            JOptionPane.showMessageDialog(this, "이름을 입력해주세요.", "입력 오류", JOptionPane.WARNING_MESSAGE);
-            nameField.requestFocus(); return;
-        }
-        if (birthDateUtil == null) {
-            JOptionPane.showMessageDialog(this, "생년월일을 선택해주세요.", "입력 오류", JOptionPane.WARNING_MESSAGE);
-            birthDateSpinner.requestFocus(); return;
-        }
-        if (selectedDeptItem == null || selectedDeptItem.getId() == 0) {
-            JOptionPane.showMessageDialog(this, "학과를 선택해주세요.", "입력 오류", JOptionPane.WARNING_MESSAGE);
-            departmentComboBox.requestFocus(); return;
-        }
-        // 학년과 상태는 콤보박스 기본 선택값이 있으므로 null 체크는 불필요할 수 있음
 
         LocalDate birthDate = birthDateUtil.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
         int grade = Integer.parseInt(selectedGradeStr.replace("학년", ""));
 
-        UserDto userDto = new UserDto();
+        // DTO에 현재 UI의 값을 채움
+        UserDto userDto = (studentToEdit != null) ? studentToEdit : new UserDto();
         userDto.setStudentNumber(studentNumber);
         userDto.setName(name);
         userDto.setBirthDate(birthDate);
         userDto.setDpmtId(selectedDeptItem.getId());
-        userDto.setDepartmentName(selectedDeptItem.getName()); // DTO에 학과명도 설정
+        userDto.setDepartmentName(selectedDeptItem.getName());
         userDto.setGrade(grade);
         userDto.setStatus(selectedStatus);
-        userDto.setLevel(1); // 학생 레벨
+        userDto.setLevel(1);
 
-        try {
-            if (studentToEdit == null) { // 신규 등록 모드
-                userService.registerStudent(userDto);
-                JOptionPane.showMessageDialog(this, "학생이 성공적으로 등록되었습니다.\n초기 비밀번호는 'a' + 생년월일 8자리입니다.", "등록 완료", JOptionPane.INFORMATION_MESSAGE);
-            } else { // 수정 모드
-                // studentToEdit.getUserId()를 사용해야 함
-                userService.updateStudentInfo(studentToEdit.getUserId(), userDto);
-                JOptionPane.showMessageDialog(this, "학생 정보가 성공적으로 수정되었습니다.", "수정 완료", JOptionPane.INFORMATION_MESSAGE);
+        if (isPreviewMode) {
+            // 미리보기 모드: DB 저장 없이 콜백만 호출
+            if (onUpdateCallback != null) {
+                onUpdateCallback.accept(userDto);
             }
-            isSaved = true; // 저장 성공
-            if (onSaveSuccessCallback != null) {
-                onSaveSuccessCallback.run(); // StudentMgmtPanel의 목록 새로고침
+            isSaved = true;
+            dispose();
+        } else {
+            // 기존 모드: DB에 저장
+            try {
+                if (studentToEdit == null) {
+                    userService.registerStudent(userDto);
+                    JOptionPane.showMessageDialog(this, "학생이 성공적으로 등록되었습니다.\n초기 비밀번호는 'a' + 생년월일 8자리입니다.", "등록 완료", JOptionPane.INFORMATION_MESSAGE);
+                } else {
+                    userService.updateStudentInfo(studentToEdit.getUserId(), userDto);
+                    JOptionPane.showMessageDialog(this, "학생 정보가 성공적으로 수정되었습니다.", "수정 완료", JOptionPane.INFORMATION_MESSAGE);
+                }
+                isSaved = true;
+                if (onSaveSuccessCallback != null) {
+                    onSaveSuccessCallback.run();
+                }
+                dispose();
+            } catch (ServiceException | SQLException | DaoException ex) {
+                JOptionPane.showMessageDialog(this, "학생 정보 저장 중 오류 발생:\n" + ex.getMessage(), "저장 오류", JOptionPane.ERROR_MESSAGE);
             }
-            dispose(); // 다이얼로그 닫기
-
-        } catch (ServiceException | SQLException | DaoException ex) {
-            JOptionPane.showMessageDialog(this, "학생 정보 저장 중 오류 발생:\n" + ex.getMessage(), "저장 오류", JOptionPane.ERROR_MESSAGE);
         }
     }
 

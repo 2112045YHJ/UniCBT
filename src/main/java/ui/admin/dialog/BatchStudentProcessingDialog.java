@@ -1,3 +1,5 @@
+// src/main/java/ui/admin/dialog/BatchStudentProcessingDialog.java
+
 package main.java.ui.admin.dialog; // StudentEditorDialog와 같은 패키지 또는 적절한 위치
 
 import main.java.dao.DaoException;
@@ -18,6 +20,11 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors; // 추가
+
+import javax.swing.table.DefaultTableCellRenderer; // 새로 추가
+import java.awt.event.MouseAdapter; // 새로 추가
+import java.awt.event.MouseEvent;  // 새로 추가
+import java.util.function.Consumer; // 새로 추가
 
 /**
  * 학생 정보 일괄 추가/업데이트를 위한 JDialog 입니다.
@@ -44,7 +51,7 @@ public class BatchStudentProcessingDialog extends JDialog {
         this.userService = userService;
         this.onProcessCompleteCallback = onProcessCompleteCallback;
 
-        setSize(950, 650); // 다이얼로그 크기 조정
+        setSize(1100, 650); // 다이얼로그 크기 조정 (비고 컬럼 추가로 너비 확장)
         setResizable(false);
         setLocationRelativeTo(owner);
         setLayout(new BorderLayout(10, 10));
@@ -53,6 +60,10 @@ public class BatchStudentProcessingDialog extends JDialog {
         initComponents();
     }
 
+    /**
+     * [수정된 메서드]
+     * 요구사항 반영: '비고' 컬럼 추가 및 컬럼 너비 조정
+     */
     private void initComponents() {
         // 상단: 파일 선택 영역
         JPanel filePanel = new JPanel(new BorderLayout(10, 0));
@@ -72,7 +83,7 @@ public class BatchStudentProcessingDialog extends JDialog {
         add(filePanel, BorderLayout.NORTH);
 
         // 중앙: 미리보기 테이블 영역
-        String[] columnNames = {"적용", "구분", "학번", "이름", "엑셀 학과", "엑셀 학년", "엑셀 상태", "기존 학과", "기존 학년", "기존 상태", "변경사항"};
+        String[] columnNames = {"적용", "구분", "학번", "이름", "엑셀 학과", "엑셀 학년", "엑셀 상태", "기존 학과", "기존 학년", "기존 상태", "변경사항", "비고"};
         previewTableModel = new DefaultTableModel(columnNames, 0) {
             @Override
             public boolean isCellEditable(int row, int column) {
@@ -91,19 +102,34 @@ public class BatchStudentProcessingDialog extends JDialog {
         previewTable.getTableHeader().setFont(new Font("맑은 고딕", Font.BOLD, 12));
         previewTable.setFont(new Font("맑은 고딕", Font.PLAIN, 12));
 
+        // [새로 추가된 코드] 커스텀 렌더러 적용
+        previewTable.setDefaultRenderer(Object.class, new BatchPreviewTableCellRenderer());
+
+        // [새로 추가된 코드] 더블클릭 이벤트 리스너 추가
+        previewTable.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                if (e.getClickCount() == 2) {
+                    handleDoubleClickOnTable();
+                }
+            }
+        });
+
         // 컬럼 너비 설정
         TableColumn selectionColumn = previewTable.getColumnModel().getColumn(0); // 적용
-        selectionColumn.setPreferredWidth(50);
-        previewTable.getColumnModel().getColumn(1).setPreferredWidth(60);  // 구분
-        previewTable.getColumnModel().getColumn(2).setPreferredWidth(100); // 학번
-        previewTable.getColumnModel().getColumn(3).setPreferredWidth(100); // 이름
+        selectionColumn.setPreferredWidth(40);
+        previewTable.getColumnModel().getColumn(1).setPreferredWidth(50);  // 구분
+        previewTable.getColumnModel().getColumn(2).setPreferredWidth(90); // 학번
+        previewTable.getColumnModel().getColumn(3).setPreferredWidth(80); // 이름
         previewTable.getColumnModel().getColumn(4).setPreferredWidth(120); // 엑셀 학과
-        previewTable.getColumnModel().getColumn(5).setPreferredWidth(80);  // 엑셀 학년
-        previewTable.getColumnModel().getColumn(6).setPreferredWidth(80);  // 엑셀 상태
+        previewTable.getColumnModel().getColumn(5).setPreferredWidth(60);  // 엑셀 학년
+        previewTable.getColumnModel().getColumn(6).setPreferredWidth(60);  // 엑셀 상태
         previewTable.getColumnModel().getColumn(7).setPreferredWidth(120); // 기존 학과
-        previewTable.getColumnModel().getColumn(8).setPreferredWidth(80);  // 기존 학년
-        previewTable.getColumnModel().getColumn(9).setPreferredWidth(80);  // 기존 상태
-        previewTable.getColumnModel().getColumn(10).setPreferredWidth(150);// 변경사항
+        previewTable.getColumnModel().getColumn(8).setPreferredWidth(60);  // 기존 학년
+        previewTable.getColumnModel().getColumn(9).setPreferredWidth(60);  // 기존 상태
+        previewTable.getColumnModel().getColumn(10).setPreferredWidth(120);// 변경사항
+        previewTable.getColumnModel().getColumn(11).setPreferredWidth(150); // 비고 (새 컬럼)
+
 
         JScrollPane scrollPane = new JScrollPane(previewTable);
         add(scrollPane, BorderLayout.CENTER);
@@ -122,6 +148,44 @@ public class BatchStudentProcessingDialog extends JDialog {
         bottomPanel.add(processButton);
         bottomPanel.add(cancelButton);
         add(bottomPanel, BorderLayout.SOUTH);
+    }
+
+    private class BatchPreviewTableCellRenderer extends DefaultTableCellRenderer {
+        // [수정된 코드] 사용자의 요청에 따라 색상을 더 눈에 띄게 변경
+        private final Color MODIFIED_COLOR = new Color(255, 235, 238); // 연한 분홍색/붉은 계열
+        private final Color ERROR_COLOR = new Color(224, 224, 224);    // 좀 더 진한 회색
+
+        @Override
+        public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
+            Component c = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
+
+            // 선택된 행은 기본 선택 색상 유지
+            if (isSelected) {
+                // c.setBackground(table.getSelectionBackground()); // 이 부분은 super 클래스가 처리하므로 명시적으로 호출할 필요 없음
+                return c;
+            }
+
+            // 모델 인덱스로 변환하여 DTO 가져오기
+            int modelRow = table.convertRowIndexToModel(row);
+            if (modelRow >= 0 && modelRow < previewDataList.size()) {
+                UserBatchUpdatePreviewDto previewDto = previewDataList.get(modelRow);
+
+                if (previewDto.getValidationMessage() != null && !previewDto.getValidationMessage().isEmpty()) {
+                    // 유효성 검사 오류가 있는 행
+                    c.setBackground(ERROR_COLOR);
+                } else if (!previewDto.isNewUser() && previewDto.getChangedFields() != null && !previewDto.getChangedFields().isEmpty()) {
+                    // 기존 학생 중 변경사항이 있는 행
+                    c.setBackground(MODIFIED_COLOR);
+                } else {
+                    // 그 외 (신규 또는 변경없는 기존 학생)
+                    c.setBackground(table.getBackground());
+                }
+            } else {
+                c.setBackground(table.getBackground());
+            }
+
+            return c;
+        }
     }
 
     private void selectExcelFile() {
@@ -148,6 +212,68 @@ public class BatchStudentProcessingDialog extends JDialog {
         }
     }
 
+    private void handleDoubleClickOnTable() {
+        int viewRow = previewTable.getSelectedRow();
+        if (viewRow < 0) return;
+
+        int modelRow = previewTable.convertRowIndexToModel(viewRow);
+        if (modelRow >= 0 && modelRow < previewDataList.size()) {
+            UserBatchUpdatePreviewDto originalPreviewDto = previewDataList.get(modelRow);
+            UserDto dtoToEdit = originalPreviewDto.getUserInfoFromExcel();
+
+            // 미리보기 수정용 생성자로 StudentEditorDialog 호출
+            StudentEditorDialog editorDialog = new StudentEditorDialog(this, dtoToEdit, updatedDto -> {
+                // 수정 완료 후 콜백 로직: 미리보기 테이블의 데이터를 업데이트
+                try {
+                    // 수정된 정보로 새로운 Preview DTO를 만들어 기존 것을 대체
+                    UserBatchUpdatePreviewDto newPreviewDto = new UserBatchUpdatePreviewDto(
+                            originalPreviewDto.getExistingUserInDB(), // 기존 DB 정보는 동일
+                            updatedDto,                               // 수정된 엑셀 정보
+                            originalPreviewDto.isNewUser()            // 신규 여부는 동일
+                    );
+
+                    previewDataList.set(modelRow, newPreviewDto);
+                    updateTableModelRow(modelRow, newPreviewDto);
+
+                } catch (Exception ex) {
+                    JOptionPane.showMessageDialog(this, "미리보기 업데이트 중 오류 발생:\n" + ex.getMessage(), "오류", JOptionPane.ERROR_MESSAGE);
+                }
+            });
+            editorDialog.setVisible(true);
+        }
+    }
+
+    /**
+     * [새로 추가된 메서드]
+     * 미리보기 테이블의 특정 행을 새로운 DTO 정보로 업데이트합니다.
+     * @param modelRow 업데이트할 테이블 모델의 행 인덱스
+     * @param dto 새로운 UserBatchUpdatePreviewDto 데이터
+     */
+    private void updateTableModelRow(int modelRow, UserBatchUpdatePreviewDto dto) {
+        UserDto existing = dto.getExistingUserInDB();
+        UserDto fromExcel = dto.getUserInfoFromExcel();
+
+        previewTableModel.setValueAt(dto.isSelectedForUpdate(), modelRow, 0);
+        previewTableModel.setValueAt(dto.isNewUser() ? "신규" : "변경", modelRow, 1);
+        previewTableModel.setValueAt(fromExcel.getStudentNumber(), modelRow, 2);
+        previewTableModel.setValueAt(fromExcel.getName(), modelRow, 3);
+        previewTableModel.setValueAt(fromExcel.getDepartmentName() != null ? fromExcel.getDepartmentName() : "-", modelRow, 4);
+        previewTableModel.setValueAt(fromExcel.getGrade() > 0 ? fromExcel.getGrade() + "학년" : "-", modelRow, 5);
+        previewTableModel.setValueAt(fromExcel.getStatus(), modelRow, 6);
+        previewTableModel.setValueAt(existing != null ? (existing.getDepartmentName() != null ? existing.getDepartmentName() : "-") : "N/A", modelRow, 7);
+        previewTableModel.setValueAt(existing != null ? (existing.getGrade() > 0 ? existing.getGrade() + "학년" : "-") : "N/A", modelRow, 8);
+        previewTableModel.setValueAt(existing != null ? existing.getStatus() : "N/A", modelRow, 9);
+        previewTableModel.setValueAt(dto.isNewUser() ? "신규 등록 대상" : String.join(", ", dto.getChangedFields()), modelRow, 10);
+        previewTableModel.setValueAt(dto.getValidationMessage(), modelRow, 11);
+
+        // 변경 후 테이블을 다시 그려서 색상 등이 즉시 반영되도록 함
+        previewTable.revalidate();
+        previewTable.repaint();
+    }
+    /**
+     * [수정된 메서드]
+     * 요구사항 반영: '비고' 컬럼에 유효성 검사 메시지 추가
+     */
     private void loadAndPreviewExcelData() {
         if (selectedExcelFile == null) {
             JOptionPane.showMessageDialog(this, "먼저 엑셀 파일을 선택해주세요.", "알림", JOptionPane.INFORMATION_MESSAGE);
@@ -192,7 +318,8 @@ public class BatchStudentProcessingDialog extends JDialog {
                         existing != null ? (existing.getDepartmentName() !=null ? existing.getDepartmentName() : "-") : "N/A",
                         existing != null ? (existing.getGrade() > 0 ? existing.getGrade() + "학년" : "-") : "N/A",
                         existing != null ? existing.getStatus() : "N/A",
-                        previewDto.isNewUser() ? "신규 등록 대상" : String.join(", ", previewDto.getChangedFields())
+                        previewDto.isNewUser() ? "신규 등록 대상" : String.join(", ", previewDto.getChangedFields()),
+                        previewDto.getValidationMessage() // 비고 컬럼에 유효성 검사 메시지 표시
                 });
             }
             processButton.setEnabled(true); // 데이터가 있으면 일괄 적용 버튼 활성화
@@ -216,10 +343,7 @@ public class BatchStudentProcessingDialog extends JDialog {
             Boolean isSelected = (Boolean) previewTableModel.getValueAt(i, 0); // "적용" 체크박스
             if (isSelected != null && isSelected) {
                 if (i < previewDataList.size()) { // 데이터 일관성 확인
-                    // UserBatchUpdatePreviewDto에서 엑셀 정보를 가져와 서비스에 전달
-                    UserDto userFromExcel = previewDataList.get(i).getUserInfoFromExcel();
-                    // UserDto에는 학번, 이름, 생년월일, (변환된)학과ID, 학년, 상태가 모두 있어야 함
-                    studentsToActuallyProcess.add(userFromExcel);
+                    studentsToActuallyProcess.add(previewDataList.get(i).getUserInfoFromExcel());
                 }
             }
         }
@@ -229,9 +353,28 @@ public class BatchStudentProcessingDialog extends JDialog {
             return;
         }
 
+        // [새로 추가된 코드] 학과 미지정 학생 확인 로직
+        List<String> studentsWithoutDeptNames = studentsToActuallyProcess.stream()
+                .filter(dto -> dto.getDpmtId() == 0)
+                .map(UserDto::getName)
+                .collect(Collectors.toList());
+
+        StringBuilder confirmationMessage = new StringBuilder();
+        confirmationMessage.append("선택된 ").append(studentsToActuallyProcess.size())
+                .append("명의 학생 정보를 일괄 적용(신규 등록 또는 정보 업데이트)하시겠습니까?");
+
+        if (!studentsWithoutDeptNames.isEmpty()) {
+            confirmationMessage.append("\n\n[주의] 아래 학생들은 학과가 지정되지 않았습니다:\n")
+                    .append(String.join(", ", studentsWithoutDeptNames))
+                    .append("\n\n이 학생들을 포함하여 그대로 진행하시겠습니까?");
+        }
+        // [수정된 코드 끝]
+
         int confirm = JOptionPane.showConfirmDialog(this,
-                "선택된 " + studentsToActuallyProcess.size() + "명의 학생 정보를 일괄 적용(신규 등록 또는 정보 업데이트)하시겠습니까?",
-                "일괄 적용 확인", JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
+                confirmationMessage.toString(), // 동적으로 생성된 메시지 사용
+                "일괄 적용 확인",
+                JOptionPane.YES_NO_OPTION,
+                studentsWithoutDeptNames.isEmpty() ? JOptionPane.QUESTION_MESSAGE : JOptionPane.WARNING_MESSAGE); // 경고 아이콘 표시
 
         if (confirm == JOptionPane.YES_OPTION) {
             try {
