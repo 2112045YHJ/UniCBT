@@ -43,11 +43,9 @@ public class ExcelParserUtil {
      */
     public static List<UserDto> parseStudentExcel(File excelFile) throws IOException, IllegalArgumentException {
         List<UserDto> studentList = new ArrayList<>();
-        FileInputStream fis = null;
-        Workbook workbook = null;
 
-        try {
-            fis = new FileInputStream(excelFile);
+        try (FileInputStream fis = new FileInputStream(excelFile)) {
+            Workbook workbook;
             String fileName = excelFile.getName().toLowerCase();
 
             if (fileName.endsWith(".xlsx")) {
@@ -58,47 +56,36 @@ public class ExcelParserUtil {
                 throw new IllegalArgumentException("지원하지 않는 엑셀 파일 형식입니다. (.xlsx 또는 .xls 확장자 사용)");
             }
 
-            Sheet sheet = workbook.getSheetAt(0); // 첫 번째 시트를 사용
+            Sheet sheet = workbook.getSheetAt(0);
             Iterator<Row> rowIterator = sheet.iterator();
 
-            // 헤더 행 건너뛰기
             if (rowIterator.hasNext()) {
-                rowIterator.next();
+                rowIterator.next(); // 헤더 행 건너뛰기
             }
 
-            int rowNumForLog = 1; // 로그용 행 번호 (데이터 행 기준)
+            int rowNumForLog = 1;
             while (rowIterator.hasNext()) {
                 rowNumForLog++;
                 Row row = rowIterator.next();
+
+                // 학번이 비어있으면 유의미한 행이 아니라고 판단하여 건너뜀
+                Cell studentNumberCell = row.getCell(0, Row.MissingCellPolicy.RETURN_BLANK_AS_NULL);
+                String studentNumber = getCellValueAsString(studentNumberCell).trim();
+                if (studentNumber.isEmpty()) {
+                    continue;
+                }
+
                 UserDto userDto = new UserDto();
+                userDto.setStudentNumber(studentNumber);
 
                 try {
-                    // 학번 (A열, 인덱스 0) - 필수
-                    Cell studentNumberCell = row.getCell(0, Row.MissingCellPolicy.RETURN_BLANK_AS_NULL);
-                    String studentNumber = getCellValueAsString(studentNumberCell);
-                    if (studentNumber == null || studentNumber.trim().isEmpty()) {
-                        System.err.println("경고: 엑셀 " + rowNumForLog + "행 - 학번 누락. 해당 행을 건너뜁니다.");
-                        continue;
-                    }
-                    userDto.setStudentNumber(studentNumber.trim());
-
-                    // 이름 (B열, 인덱스 1) - 필수
+                    // 이름 (B열, 인덱스 1)
                     Cell nameCell = row.getCell(1, Row.MissingCellPolicy.RETURN_BLANK_AS_NULL);
-                    String name = getCellValueAsString(nameCell);
-                    if (name == null || name.trim().isEmpty()) {
-                        System.err.println("경고: 엑셀 " + rowNumForLog + "행 (학번: " + studentNumber + ") - 이름 누락. 해당 행을 건너뜁니다.");
-                        continue;
-                    }
-                    userDto.setName(name.trim());
+                    userDto.setName(getCellValueAsString(nameCell).trim());
 
-                    // 생년월일 (C열, 인덱스 2) - 필수 (비밀번호 생성용)
+                    // 생년월일 (C열, 인덱스 2)
                     Cell birthDateCell = row.getCell(2, Row.MissingCellPolicy.RETURN_BLANK_AS_NULL);
-                    LocalDate birthDate = getCellDateValue(birthDateCell);
-                    if (birthDate == null) {
-                        System.err.println("경고: 엑셀 " + rowNumForLog + "행 (학번: " + studentNumber + ") - 생년월일 누락 또는 형식 오류. 해당 행을 건너뜁니다.");
-                        continue;
-                    }
-                    userDto.setBirthDate(birthDate);
+                    userDto.setBirthDate(getCellDateValue(birthDateCell)); // getCellDateValue는 파싱 실패 시 null 반환
 
                     // 학과명 (D열, 인덱스 3)
                     Cell departmentNameCell = row.getCell(3, Row.MissingCellPolicy.RETURN_BLANK_AS_NULL);
@@ -108,39 +95,25 @@ public class ExcelParserUtil {
                     Cell gradeCell = row.getCell(4, Row.MissingCellPolicy.RETURN_BLANK_AS_NULL);
                     String gradeStr = getCellValueAsString(gradeCell).replaceAll("[^0-9]", "");
                     if (!gradeStr.isEmpty()) {
-                        try {
-                            userDto.setGrade(Integer.parseInt(gradeStr));
-                        } catch (NumberFormatException e) {
-                            System.err.println("경고: 엑셀 " + rowNumForLog + "행 (학번: " + studentNumber + ") - 학년 형식 오류: " + getCellValueAsString(gradeCell) + ". 기본값(0)으로 설정됩니다.");
-                            userDto.setGrade(0); // 또는 다른 오류 처리
-                        }
+                        userDto.setGrade(Integer.parseInt(gradeStr));
                     } else {
-                        userDto.setGrade(0); // 빈 값이면 기본값(0)
+                        userDto.setGrade(0);
                     }
 
                     // 상태 (F열, 인덱스 5)
                     Cell statusCell = row.getCell(5, Row.MissingCellPolicy.RETURN_BLANK_AS_NULL);
                     String status = getCellValueAsString(statusCell).trim();
-                    if (!status.isEmpty()) {
-                        // TODO: 입력된 status 값이 유효한 값인지 검증하는 로직 추가 (예: "재학", "휴학" 등 정의된 값만 허용)
-                        userDto.setStatus(status);
-                    } else {
-                        userDto.setStatus("재학"); // 엑셀에 상태값이 없으면 기본 "재학"으로
-                    }
+                    userDto.setStatus(status.isEmpty() ? "재학" : status);
 
-                    // UserDto에 level 기본값 설정 (학생이므로 1)
                     userDto.setLevel(1);
-
                     studentList.add(userDto);
 
                 } catch (Exception cellProcessingException) {
-                    System.err.println("엑셀 파일 " + rowNumForLog + "행 (학번: " + userDto.getStudentNumber() + ") 처리 중 예기치 않은 오류 발생: " + cellProcessingException.getMessage());
-                    // 정책에 따라 해당 행을 건너뛰거나, 전체 파싱 작업을 중단할 수 있음
+                    System.err.println("엑셀 파일 " + rowNumForLog + "행 (학번: " + studentNumber + ") 처리 중 예기치 않은 오류 발생: " + cellProcessingException.getMessage());
+                    // 오류가 발생한 행도 DTO에 담아 UI에서 오류로 표시할 수 있으나, 우선은 로깅만 하고 넘어감
                 }
             } // while
-        } finally {
-            if (workbook != null) workbook.close(); // try-with-resources로 변경하면 자동 close
-            if (fis != null) fis.close();          // try-with-resources로 변경하면 자동 close
+            workbook.close();
         }
         return studentList;
     }

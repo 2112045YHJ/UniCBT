@@ -7,11 +7,12 @@ import java.util.ArrayList; // ArrayList 임포트
  * 엑셀 일괄 업데이트 시, 기존 정보와 변경될 정보를 비교하여 보여주기 위한 DTO입니다.
  */
 public class UserBatchUpdatePreviewDto {
-    private UserDto existingUserInDB;      // DB에 저장된 현재 사용자 정보 (신규 등록 시 null)
-    private UserDto userInfoFromExcel;     // 엑셀에서 읽어온 (업데이트 될) 사용자 정보
-    private List<String> changedFields;    // 변경된 필드명 목록 (예: "학년", "상태")
-    private boolean isNewUser;             // 이 학생이 신규 등록 대상인지 여부
-    private boolean selectedForUpdate = true; // UI에서 사용자가 이 항목을 실제 업데이트 대상으로 선택했는지 (기본값 true)
+    private UserDto existingUserInDB;
+    private UserDto userInfoFromExcel;
+    private List<String> changedFields;
+    private boolean isNewUser;
+    private boolean selectedForUpdate = true; // UI 체크박스 기본값
+    private String validationMessage = "";
 
     /**
      * 생성자입니다.
@@ -25,34 +26,51 @@ public class UserBatchUpdatePreviewDto {
         this.isNewUser = isNewUser;
         this.changedFields = new ArrayList<>();
 
-        // existingUserInDB와 userInfoFromExcel을 비교하여 changedFields 목록을 채우는 로직
-        if (!isNewUser && existingUserInDB != null && userInfoFromExcel != null) {
-            if (userInfoFromExcel.getName() != null && !userInfoFromExcel.getName().equals(existingUserInDB.getName())) {
+        validateAndDetectChanges(); // 생성자에서 유효성 검사 및 변경 감지 실행
+    }
+
+    private void validateAndDetectChanges() {
+        UserDto excelData = this.userInfoFromExcel;
+        StringBuilder errors = new StringBuilder();
+
+        // 1. 필수 필드 유효성 검사
+        if (excelData.getName() == null || excelData.getName().isEmpty()) {
+            errors.append("이름 누락; ");
+        }
+        if (excelData.getBirthDate() == null) {
+            errors.append("생년월일 누락/형식오류; ");
+        }
+
+        // 2. 학과 데이터 유효성 검사 (Service에서 dpmtId 변환 후 판단)
+        // UserServiceImpl.previewExcelStudentUpdates에서 학과명을 ID로 변환 실패 시 dpmtId를 0으로 설정
+        if (excelData.getDpmtId() == 0 && excelData.getDepartmentName() != null && !excelData.getDepartmentName().isEmpty()) {
+            errors.append("일치하는 학과 없음(").append(excelData.getDepartmentName()).append("); ");
+        }
+
+        // 유효성 검사 실패 시
+        if (errors.length() > 0) {
+            this.validationMessage = errors.toString();
+            this.selectedForUpdate = false; // 적용 체크박스 해제
+            return; // 변경 감지는 더 이상 진행하지 않음
+        }
+
+        // 3. 변경 필드 감지 (신규 사용자가 아니고, 유효성 검사를 통과했을 때만)
+        if (!isNewUser && existingUserInDB != null) {
+            if (!excelData.getName().equals(existingUserInDB.getName())) {
                 changedFields.add("이름");
             }
-            if (userInfoFromExcel.getBirthDate() != null && !userInfoFromExcel.getBirthDate().equals(existingUserInDB.getBirthDate())) {
+            if (!excelData.getBirthDate().equals(existingUserInDB.getBirthDate())) {
                 changedFields.add("생년월일");
             }
-            // 학과명으로 비교하거나, userInfoFromExcel에 dpmtId가 채워져 있다면 ID로 비교
-            if (userInfoFromExcel.getDepartmentName() != null && !userInfoFromExcel.getDepartmentName().equals(existingUserInDB.getDepartmentName())) {
-                if (userInfoFromExcel.getDpmtId() != existingUserInDB.getDpmtId()){ // ID가 있다면 ID 우선 비교
-                    changedFields.add("학과");
-                } else if (userInfoFromExcel.getDpmtId() == 0 && existingUserInDB.getDpmtId() !=0){ // 엑셀에서 학과명으로 ID를 못찾았지만 기존엔 있었던 경우
-                    changedFields.add("학과 (ID 확인 필요)");
-                } else if (userInfoFromExcel.getDepartmentName() != null && !userInfoFromExcel.getDepartmentName().equals(existingUserInDB.getDepartmentName())){
-                    changedFields.add("학과");
-                }
-            } else if (userInfoFromExcel.getDpmtId() > 0 && userInfoFromExcel.getDpmtId() != existingUserInDB.getDpmtId()){
+            if (excelData.getDpmtId() != existingUserInDB.getDpmtId()) {
                 changedFields.add("학과");
             }
-
-            if (userInfoFromExcel.getGrade() > 0 && userInfoFromExcel.getGrade() != existingUserInDB.getGrade()) {
+            if (excelData.getGrade() != existingUserInDB.getGrade()) {
                 changedFields.add("학년");
             }
-            if (userInfoFromExcel.getStatus() != null && !userInfoFromExcel.getStatus().equals(existingUserInDB.getStatus())) {
+            if (!excelData.getStatus().equals(existingUserInDB.getStatus())) {
                 changedFields.add("상태");
             }
-            // 비밀번호 변경은 이 DTO에서 직접 비교하지 않음 (별도 처리)
         }
     }
 
