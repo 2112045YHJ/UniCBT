@@ -1,6 +1,12 @@
+// src/main/java/ui/admin/ProfilePanel.java
+
+// [수정된 파일]
 package main.java.ui.admin;
 
 import main.java.model.User;
+import main.java.service.UserService;
+import main.java.service.UserServiceImpl;
+import main.java.service.ServiceException;
 
 import javax.swing.*;
 import java.awt.*;
@@ -15,6 +21,9 @@ public class ProfilePanel extends JPanel {
     private final JTextField idField;
     private final JPasswordField passwordField;
     private final JButton saveButton;
+
+    // [새로 추가된 필드] DB 연동을 위한 서비스 객체
+    private final UserService userService = new UserServiceImpl();
 
     public ProfilePanel(User user) {
         this.user = user;
@@ -47,6 +56,7 @@ public class ProfilePanel extends JPanel {
         add(new JLabel("비밀번호:"), gbc);
         gbc.gridx = 1;
         passwordField = new JPasswordField(20);
+        passwordField.setToolTipText("변경할 경우에만 새 비밀번호를 입력하세요.");
         add(passwordField, gbc);
 
         // 저장 버튼
@@ -57,7 +67,7 @@ public class ProfilePanel extends JPanel {
         saveButton = new JButton("저장");
         add(saveButton, gbc);
 
-        // 저장 버튼 클릭 이벤트
+        // [수정된 메서드] 저장 버튼 클릭 이벤트
         saveButton.addActionListener(e -> {
             String newName = nameField.getText().trim();
             String newId = idField.getText().trim();
@@ -71,20 +81,28 @@ public class ProfilePanel extends JPanel {
                 return;
             }
 
-            // 사용자 객체 업데이트
-            user.setName(newName);
-            user.setStudentNumber(newId);
-            if (!newPwd.isEmpty()) {
-                user.setPassword(newPwd);
+            try {
+                // DB 업데이트 로직 연결 (새로 추가된 서비스 메서드 호출)
+                userService.updateAdminProfile(user.getUserId(), newName, newId, newPwd);
+
+                // 성공 시, 현재 화면의 user 객체 정보도 동기화
+                user.setName(newName);
+                user.setStudentNumber(newId);
+                // 비밀번호는 보안상 다시 채우지 않음
+
+                JOptionPane.showMessageDialog(this,
+                        "정보가 성공적으로 저장되었습니다.\n(변경된 정보는 재로그인 시 상단에 반영됩니다)",
+                        "성공", JOptionPane.INFORMATION_MESSAGE);
+
+                // 비밀번호 필드 초기화
+                passwordField.setText("");
+
+            } catch (ServiceException ex) {
+                // 서비스 로직에서 발생한 예외(예: 아이디 중복) 처리
+                JOptionPane.showMessageDialog(this,
+                        "정보 저장 중 오류가 발생했습니다:\n" + ex.getMessage(),
+                        "오류", JOptionPane.ERROR_MESSAGE);
             }
-
-            // TODO: DB 업데이트 로직 연결 (UserDao 또는 Service 호출)
-            JOptionPane.showMessageDialog(this,
-                    "정보가 성공적으로 저장되었습니다.",
-                    "성공", JOptionPane.INFORMATION_MESSAGE);
-
-            // 비밀번호 필드 초기화
-            passwordField.setText("");
         });
     }
 }

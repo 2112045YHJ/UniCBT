@@ -468,4 +468,46 @@ public class UserServiceImpl implements UserService {
             if (conn != null) try { conn.setAutoCommit(true); conn.close(); } catch (SQLException ex) { /* 로깅 */ }
         }
     }
+
+    @Override
+    public void updateAdminProfile(int userId, String newName, String newId, String newPassword) throws ServiceException {
+        Connection conn = null;
+        try {
+            conn = DBConnection.getConnection();
+            conn.setAutoCommit(false); // 트랜잭션 시작
+
+            User user = userDao.findById(userId, conn);
+            if (user == null) {
+                throw new ServiceException("ID " + userId + "에 해당하는 관리자 정보를 찾을 수 없습니다.");
+            }
+
+            // 아이디(학번) 변경 시 중복 검사
+            if (newId != null && !newId.trim().isEmpty() && !newId.trim().equals(user.getStudentNumber())) {
+                if (userDao.findByStudentNumber(newId.trim(), conn) != null) {
+                    throw new ServiceException("수정하려는 아이디(" + newId + ")는 이미 사용 중입니다.");
+                }
+                user.setStudentNumber(newId.trim());
+            }
+
+            // 이름 변경
+            if (newName != null && !newName.trim().isEmpty()) {
+                user.setName(newName.trim());
+            }
+
+            // 비밀번호 변경 (입력된 경우에만)
+            if (newPassword != null && !newPassword.isEmpty()) {
+                user.setPassword(PasswordUtil.hashPassword(newPassword));
+            }
+
+            // user 객체의 모든 필드를 업데이트하는 update 메서드 호출
+            userDao.update(user, conn);
+            conn.commit();
+
+        } catch (DaoException | SQLException e) {
+            if (conn != null) try { conn.rollback(); } catch (SQLException ex) { /* 롤백 오류 로깅 */ }
+            throw new ServiceException("관리자 정보 수정 중 오류 발생: " + e.getMessage(), e);
+        } finally {
+            if (conn != null) try { conn.setAutoCommit(true); conn.close(); } catch (SQLException ex) { /* 연결 종료 오류 로깅 */ }
+        }
+    }
 }

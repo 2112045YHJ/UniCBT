@@ -81,4 +81,15 @@ public interface UserService {
      * @throws ServiceException 서비스 처리 중 오류 발생 시 (트랜잭셔널하게 처리)
      */
     void promoteStudentsToNextGrade() throws ServiceException;
+
+    /**
+     * [새로 추가된 메서드]
+     * 관리자 정보를 업데이트합니다. 비밀번호는 비어 있지 않은 경우에만 변경됩니다.
+     * @param userId 업데이트할 관리자의 ID
+     * @param newName 새로운 이름
+     * @param newId 새로운 아이디(학번)
+     * @param newPassword 새로운 비밀번호 (비어있으면 변경 안 함)
+     * @throws ServiceException 사용자 정보가 없거나, 아이디 중복 등 오류 발생 시
+     */
+    void updateAdminProfile(int userId, String newName, String newId, String newPassword) throws ServiceException;
 }
