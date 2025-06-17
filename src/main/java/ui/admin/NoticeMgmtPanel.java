@@ -5,8 +5,8 @@ import main.java.model.User; // adminUser 타입
 import main.java.service.AnnouncementService;
 import main.java.service.AnnouncementServiceImpl;
 import main.java.service.ServiceException;
-import main.java.dao.DaoException; // ServiceException이 DaoException을 래핑할 수 있음
-import main.java.ui.admin.dialog.NoticeEditorDialog; // 공지사항 편집 다이얼로그 (생성 예정)
+import main.java.dao.DaoException;
+import main.java.ui.admin.dialog.NoticeEditorDialog;
 
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;

@@ -10,13 +10,6 @@ public class ExamAssignmentDaoImpl implements ExamAssignmentDao {
 
     @Override
     public void assignStudents(int examId, List<Integer> userIds, Connection conn) throws DaoException {
-        // 이 메서드는 이미 ExamServiceImpl에서 기존 배정 삭제 후 새로 삽입하는 로직의 일부로 사용될 수 있음.
-        // 또는, 이 메서드 자체가 기존 배정 삭제 + 신규 삽입을 모두 처리하도록 할 수 있음.
-        // 현재 ExamServiceImpl.saveExamWithDetails의 업데이트 로직은 removeAssignments 후 assignStudents를 호출하므로,
-        // 여기서는 삽입만 담당하거나, 호출 전에 removeAssignments가 되었음을 가정함.
-        // 만약 이 메서드가 기존 레코드 삭제도 담당한다면 ExamServiceImpl의 중복 호출을 피해야 함.
-        // 여기서는 ExamServiceImpl의 초안대로 이 메서드가 삽입만 담당한다고 가정하고,
-        // ExamAssignmentDaoImpl의 기존 로직(기존 배정 삭제 후 일괄 삽입)을 유지하면서 Connection을 사용하도록 수정.
 
         // 1) 기존 배정 삭제 (이 메서드 내에서 트랜잭션의 일부로 수행)
         String deleteSql = "DELETE FROM exam_assignments WHERE exam_id = ?";

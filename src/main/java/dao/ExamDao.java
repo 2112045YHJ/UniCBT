@@ -9,7 +9,6 @@ public interface ExamDao {
     List<Exam> findAll(Connection conn) throws DaoException; // conn 파라미터 추가
     List<Exam> findOpenExams(Connection conn) throws DaoException; // conn 파라미터 추가
 
-    // insert 메서드는 exam 객체에 생성된 ID를 설정해야 함
     void insert(Exam exam, Connection conn) throws DaoException; // conn 파라미터 추가
     void update(Exam exam, Connection conn) throws DaoException; // conn 파라미터 추가
     void updateQuestionCount(int examId, int questionCnt, Connection conn) throws DaoException; // conn 파라미터 추가

@@ -1,6 +1,5 @@
 // src/main/java/ui/admin/ProfilePanel.java
 
-// [수정된 파일]
 package main.java.ui.admin;
 
 import main.java.model.User;
@@ -22,7 +21,7 @@ public class ProfilePanel extends JPanel {
     private final JPasswordField passwordField;
     private final JButton saveButton;
 
-    // [새로 추가된 필드] DB 연동을 위한 서비스 객체
+    // DB 연동을 위한 서비스 객체
     private final UserService userService = new UserServiceImpl();
 
     public ProfilePanel(User user) {
@@ -67,7 +66,7 @@ public class ProfilePanel extends JPanel {
         saveButton = new JButton("저장");
         add(saveButton, gbc);
 
-        // [수정된 메서드] 저장 버튼 클릭 이벤트
+        // 저장 버튼 클릭 이벤트
         saveButton.addActionListener(e -> {
             String newName = nameField.getText().trim();
             String newId = idField.getText().trim();

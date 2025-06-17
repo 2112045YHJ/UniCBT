@@ -11,8 +11,6 @@ import java.util.Map;
 
 public class ExamResultDaoImpl implements ExamResultDao {
 
-    // --- Connection을 파라미터로 받는 메서드 구현 ---
-
     @Override
     public void insert(ExamResult result, Connection conn) throws DaoException {
         String sql = "INSERT INTO examresults(exam_id, user_id, score, completed_at) VALUES(?,?,?,?)";
@@ -80,8 +78,6 @@ public class ExamResultDaoImpl implements ExamResultDao {
         }
     }
 
-    // --- 기존 시그니처 메서드 구현 ---
-
     @Override
     public void insert(ExamResult result) throws DaoException {
         try (Connection conn = DBConnection.getConnection()) {
@@ -122,7 +118,6 @@ public class ExamResultDaoImpl implements ExamResultDao {
         }
     }
 
-    // ResultSet 행을 ExamResult 객체로 매핑하는 헬퍼 메서드
     private ExamResult mapRowToExamResult(ResultSet rs) throws SQLException {
         ExamResult er = new ExamResult();
         er.setResultId(rs.getInt("result_id"));

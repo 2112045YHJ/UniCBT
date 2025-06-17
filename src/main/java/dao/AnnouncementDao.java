@@ -30,14 +30,9 @@ public interface AnnouncementDao {
     void save(Announcement ann, Connection conn) throws DaoException;
     void update(Announcement ann, Connection conn) throws DaoException;
     void delete(int id, Connection conn) throws DaoException;
-    void incrementReadCount(int id, Connection conn) throws DaoException; // 조회수 증가 메서드 (필요시)
+    void incrementReadCount(int id, Connection conn) throws DaoException;
 
 
-    // --- 기존 시그니처 메서드들 (자체 Connection 관리 또는 Connection 받는 버전 호출) ---
-    // 페이지네이션 지원을 위해 기존 findAll() 시그니처는 변경 또는 제거 고려
-    // List<Announcement> findAll() throws DaoException; // 이 메서드는 모든 공지사항을 가져오므로,
-    // 페이지네이션을 적용하려면 아래와 같이 변경하거나,
-    // 또는 다른 이름의 메서드로 전체 조회를 남겨둘 수 있습니다.
 
     /**
      * 지정된 페이지와 페이지당 항목 수에 해당하는 공지사항 목록을 조회합니다. (자체 Connection 관리)
@@ -60,5 +55,5 @@ public interface AnnouncementDao {
     void save(Announcement ann) throws DaoException;
     void update(Announcement ann) throws DaoException;
     void delete(int id) throws DaoException;
-    void incrementReadCount(int id) throws DaoException; // 조회수 증가 메서드 (필요시)
+    void incrementReadCount(int id) throws DaoException;
 }

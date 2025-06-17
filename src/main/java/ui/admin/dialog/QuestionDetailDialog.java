@@ -1,4 +1,4 @@
-package main.java.ui.admin.dialog; // 다이얼로그를 위한 새 패키지 또는 기존 admin 패키지 사용
+package main.java.ui.admin.dialog;
 
 import main.java.model.QuestionFull;
 import main.java.model.QuestionOption;

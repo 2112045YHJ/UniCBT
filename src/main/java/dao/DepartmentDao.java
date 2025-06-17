@@ -6,7 +6,6 @@ import java.util.List;
 
 public interface DepartmentDao {
 
-    // --- Connection을 파라미터로 받는 메서드 ---
     /**
      * 모든 학과 정보를 조회합니다.
      * @param conn 데이터베이스 연결 객체
@@ -23,6 +22,5 @@ public interface DepartmentDao {
      */
     Department findById(int dpmtId, Connection conn) throws DaoException;
     Department findById(int dpmtId) throws DaoException;
-    // --- 기존 시그니처 메서드 ---
     List<Department> findAllDepartments() throws DaoException;
 }

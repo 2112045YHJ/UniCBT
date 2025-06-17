@@ -9,10 +9,8 @@ import java.util.List;
 
 public class DepartmentDaoImpl implements DepartmentDao {
 
-    // --- Connection을 파라미터로 받는 메서드 구현 ---
     @Override
     public List<Department> findAllDepartments(Connection conn) throws DaoException {
-        // (이전 턴에서 제공된 코드)
         List<Department> list = new ArrayList<>();
         String sql = "SELECT dpmt_id, dpmt_name, faculty, contact_email, contact_phone, created_at FROM department ORDER BY dpmt_name";
         try (PreparedStatement pstmt = conn.prepareStatement(sql);

@@ -1,15 +1,15 @@
-package main.java.ui.admin.dialog; // 다이얼로그를 위한 새 패키지 또는 기존 admin 패키지 사용
+package main.java.ui.admin.dialog;
 
 import main.java.model.AnswerSheet;
 import main.java.model.QuestionFull;
 import main.java.model.QuestionOption;
-import main.java.model.AnswerKey; // AnswerKey 임포트
-import main.java.service.ExamService; // 전체 시험 정보를 가져오기 위함 (선택적)
+import main.java.model.AnswerKey;
+import main.java.service.ExamService;
 import main.java.service.ExamServiceImpl;
 import main.java.service.QuestionService;
 import main.java.service.QuestionServiceImpl;
 import main.java.service.ServiceException;
-import main.java.dao.AnswerSheetDao; // 학생 답안 조회를 위해 필요
+import main.java.dao.AnswerSheetDao;
 import main.java.dao.AnswerSheetDaoImpl;
 import main.java.dao.DaoException;
 

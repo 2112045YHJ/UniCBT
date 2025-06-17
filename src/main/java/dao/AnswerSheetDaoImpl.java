@@ -9,8 +9,6 @@ import java.util.List;
 
 public class AnswerSheetDaoImpl implements AnswerSheetDao {
 
-    // --- Connection을 파라미터로 받는 메서드 구현 ---
-
     @Override
     public void insert(AnswerSheet sheet, Connection conn) throws DaoException {
         String sql = "INSERT INTO answersheets(user_id, exam_id, question_id, selected_answer) VALUES(?,?,?,?)";

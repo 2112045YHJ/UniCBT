@@ -15,7 +15,6 @@ public class ExamCreationContext {
     private List<Integer> targetDepartments;
     private int originalExamIdToClearAssignments = 0; // 이전 시험 ID를 저장할 필드
 
-    // --- 기존 getter/setter ---
     public boolean isUpdateMode() {
         return updateMode;
     }
@@ -56,7 +55,6 @@ public class ExamCreationContext {
         this.targetDepartments = targetDepartments;
     }
 
-    // --- 새 getter/setter ---
     public int getOriginalExamIdToClearAssignments() {
         return originalExamIdToClearAssignments;
     }

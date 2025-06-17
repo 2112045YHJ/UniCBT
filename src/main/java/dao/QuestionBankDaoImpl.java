@@ -71,9 +71,6 @@ public class QuestionBankDaoImpl implements QuestionBankDao {
 
     @Override
     public void deleteByExamId(int examId, Connection conn) throws DaoException {
-        // CASCADE DELETE가 question_option, answer_key에 설정되어 있지 않다면,
-        // 이들을 먼저 삭제하는 로직이 ExamServiceImpl에 이미 포함되어 있어야 함.
-        // 여기서는 question_bank 테이블의 레코드만 삭제.
         String sql = "DELETE FROM question_bank WHERE exam_id = ?";
         try (PreparedStatement pstmt = conn.prepareStatement(sql)) { // 전달받은 conn 사용
             pstmt.setInt(1, examId);

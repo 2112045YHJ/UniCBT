@@ -29,8 +29,6 @@ public class AnnouncementDaoImpl implements AnnouncementDao {
     @Override
     public List<Announcement> findAll(Connection conn, int page, int itemsPerPage) throws DaoException {
         List<Announcement> list = new ArrayList<>();
-        // 페이지네이션을 위한 SQL (MariaDB/MySQL 기준 LIMIT OFFSET 사용)
-        // 최신글이 위로 오도록 정렬
         String sql = "SELECT announcement_id, title, content, created_at, updated_at, read_cnt " +
                 "FROM announcements ORDER BY created_at DESC, announcement_id DESC LIMIT ? OFFSET ?";
         try (PreparedStatement ps = conn.prepareStatement(sql)) {

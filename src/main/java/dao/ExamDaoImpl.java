@@ -8,8 +8,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class ExamDaoImpl implements ExamDao {
-    // 기존 private final Connection conn 멤버 변수는 제거하거나 사용하지 않도록 변경
-    // 또는, conn 파라미터가 없는 기존 메서드들을 위해 남겨두고, conn 파라미터가 있는 메서드는 전달받은 conn을 사용
 
     @Override
     public Exam findById(int examId, Connection conn) throws DaoException {
@@ -43,8 +41,6 @@ public class ExamDaoImpl implements ExamDao {
         try (Statement stmt = conn.createStatement(); // 전달받은 conn 사용
              ResultSet rs = stmt.executeQuery(sql)) {
             while (rs.next()) {
-                // findById 내부에서 다시 Connection을 얻지 않도록, 여기서 직접 Exam 객체를 만들거나
-                // findById도 Connection을 받도록 수정된 것을 호출
                 list.add(findById(rs.getInt("exam_id"), conn)); // 수정된 findById 호출
             }
             return list;
@@ -156,9 +152,8 @@ public class ExamDaoImpl implements ExamDao {
     @Override
     public List<Exam> findAllByUser(int userId, Connection conn) throws DaoException {
         String sql = "SELECT DISTINCT e.* FROM exams e " +
-                "JOIN exam_assignments ea ON e.exam_id = ea.exam_id " + // examresults 대신 exam_assignments 로 변경 고려 (응시 예정 시험도 포함)
+                "JOIN exam_assignments ea ON e.exam_id = ea.exam_id " +
                 "WHERE ea.user_id = ? ORDER BY e.start_date DESC";
-        // 또는 JOIN examresults r ON e.exam_id = r.exam_id WHERE r.user_id = ? (기존 방식)
         List<Exam> list = new ArrayList<>();
         try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
             pstmt.setInt(1, userId);
@@ -206,7 +201,6 @@ public class ExamDaoImpl implements ExamDao {
         return list;
     }
 
-    // ResultSet에서 Exam 객체로 매핑하는 헬퍼 메서드 (중복 감소)
     private Exam mapRowToExam(ResultSet rs) throws SQLException {
         Exam exam = new Exam();
         exam.setExamId(rs.getInt("exam_id"));

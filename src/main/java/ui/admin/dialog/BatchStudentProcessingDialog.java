@@ -61,7 +61,6 @@ public class BatchStudentProcessingDialog extends JDialog {
     }
 
     /**
-     * [수정된 메서드]
      * 요구사항 반영: '비고' 컬럼 추가 및 컬럼 너비 조정
      */
     private void initComponents() {
@@ -244,7 +243,6 @@ public class BatchStudentProcessingDialog extends JDialog {
     }
 
     /**
-     * [새로 추가된 메서드]
      * 미리보기 테이블의 특정 행을 새로운 DTO 정보로 업데이트합니다.
      * @param modelRow 업데이트할 테이블 모델의 행 인덱스
      * @param dto 새로운 UserBatchUpdatePreviewDto 데이터
@@ -270,10 +268,6 @@ public class BatchStudentProcessingDialog extends JDialog {
         previewTable.revalidate();
         previewTable.repaint();
     }
-    /**
-     * [수정된 메서드]
-     * 요구사항 반영: '비고' 컬럼에 유효성 검사 메시지 추가
-     */
     private void loadAndPreviewExcelData() {
         if (selectedExcelFile == null) {
             JOptionPane.showMessageDialog(this, "먼저 엑셀 파일을 선택해주세요.", "알림", JOptionPane.INFORMATION_MESSAGE);

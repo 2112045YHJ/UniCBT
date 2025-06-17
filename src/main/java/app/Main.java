@@ -7,7 +7,6 @@ import main.java.ui.login.LoginFrame;
 
 public class Main {
     public static void main(String[] args) {
-        // 한글 폰트·Look&Feel 설정
         try {
             UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
             String os = System.getProperty("os.name").toLowerCase();
@@ -25,7 +24,6 @@ public class Main {
             e.printStackTrace();
         }
 
-        // EDT에서 로그인 화면 띄우기
         SwingUtilities.invokeLater(() -> {
             new LoginFrame().setVisible(true);
         });

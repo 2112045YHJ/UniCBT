@@ -6,7 +6,6 @@ import java.util.List;
 import java.util.Map;
 
 public interface ExamsDepartmentDao {
-    // Connection conn 파라미터 추가
     List<ExamsDepartment> findByExamId(int examId, Connection conn) throws DaoException;
     void save(ExamsDepartment ed, Connection conn) throws DaoException;
     void delete(int examId, int dpmtId, int grade, Connection conn) throws DaoException; // 필요시 Connection 추가

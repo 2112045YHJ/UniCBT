@@ -66,9 +66,6 @@ public class AnswerKeyDaoImpl implements AnswerKeyDao {
             pstmt.setInt(3, key.getQuestionId());
             int affectedRows = pstmt.executeUpdate();
             if (affectedRows == 0) {
-                // 필요시 예외 발생 또는 로깅. insertOrUpdate 패턴이 아니라면 업데이트 대상이 없을 수 있음.
-                // 여기서는 insert 후 update가 호출될 일은 ExamServiceImpl 로직상 없으므로,
-                // 만약 호출된다면 해당 questionId가 없는 경우일 수 있음.
             }
         } catch (SQLException e) {
             throw new DaoException("Error updating AnswerKey for questionId: " + key.getQuestionId(), e);
